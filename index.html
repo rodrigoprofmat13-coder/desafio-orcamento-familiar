@@ -3,24 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desafio do Orçamento Familiar • Modo Turma (QR Code + Firebase)</title>
+    <title>Desafio do Orçamento Familiar: você consegue fechar a conta?</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-    <!-- Firebase SDK (Compat para uso direto em arquivo único) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Firebase SDK + Gerador de QR Code -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <!-- Gerador de QR Code -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: 'Nunito', sans-serif; background: linear-gradient(135deg, #e0f2fe 0%, #eef2ff 50%, #f8fafc 100%); color: #1e293b; }
-        h1, h2, h3, .font-display { font-family: 'Fredoka', sans-serif; }
+        :root { --font-display: 'Fredoka', sans-serif; --font-body: 'Nunito', sans-serif; }
+        body { font-family: var(--font-body); background: linear-gradient(135deg, #e0f2fe 0%, #eef2ff 50%, #f8fafc 100%); color: #1e293b; }
+        h1, h2, h3, .font-display { font-family: var(--font-display); }
         .tabular-nums { font-variant-numeric: tabular-nums; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(226, 232, 240, 0.5); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 9999px; }
+
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-stage-in { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes gentleShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+        .animate-shake { animation: gentleShake 0.4s ease-in-out; }
+
+        @keyframes pulseGlow { 0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0.35)} 50%{box-shadow:0 0 0 8px rgba(99,102,241,0)} }
+        .animate-pulse-glow { animation: pulseGlow 2s infinite; }
+
+        /* Animações dos Personagens SVG */
+        @keyframes charBreathe { 0%,100%{transform:translateY(0) scaleY(1)} 50%{transform:translateY(-2px) scaleY(1.015)} }
+        @keyframes charBlink { 0%,46%,54%,100%{transform:scaleY(1)} 50%{transform:scaleY(0.08)} }
+        @keyframes mouthTalk { 0%,100%{transform:scaleY(0.85)} 25%{transform:scaleY(1.85)} 50%{transform:scaleY(0.6)} 75%{transform:scaleY(1.5)} }
+        @keyframes moodFeliz { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} 60%{transform:translateY(-2px)} }
+        @keyframes moodPreocupado { 0%,100%{transform:rotate(0deg)} 25%{transform:rotate(-4deg)} 75%{transform:rotate(4deg)} }
+        @keyframes moodSurpreso { 0%,100%{transform:scale(1) translateY(0)} 40%{transform:scale(1.07) translateY(-7px)} }
+        @keyframes moodPensativo { 0%,100%{transform:rotate(0deg) translateY(0)} 50%{transform:rotate(5deg) translateY(-2px)} }
+        @keyframes moodDoente { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-2px)} 75%{transform:translateX(2px)} }
+
+        .svg-breathe { transform-origin: 50px 85px; animation: charBreathe 3.2s ease-in-out infinite; }
+        .svg-blink { transform-box: fill-box; transform-origin: center; animation: charBlink 4.2s infinite; }
+        .is-speaking .svg-mouth { transform-box: fill-box; transform-origin: center; animation: mouthTalk 0.28s ease-in-out infinite; }
+        .mood-feliz .avatar-stage { animation: moodFeliz 1.3s ease-in-out infinite; }
+        .mood-preocupado .avatar-stage { animation: moodPreocupado 2.2s ease-in-out infinite; }
+        .mood-surpreso .avatar-stage { animation: moodSurpreso 1.1s ease-out 2; }
+        .mood-pensativo .avatar-stage { animation: moodPensativo 2.8s ease-in-out infinite; }
+        .mood-doente .avatar-stage { animation: moodDoente 0.25s linear infinite; }
+
+        /* Cartas 3D */
+        .perspective-1000 { perspective: 1000px; }
+        .card-3d-inner { position: relative; width: 100%; height: 100%; transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; }
+        .card-3d.flipped .card-3d-inner { transform: rotateY(180deg); }
+        .card-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 1.25rem; }
+        .card-back { transform: rotateY(180deg); }
+
+        #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+
+        @media print {
+            body { background: white !important; }
+            #game-shell { height: auto !important; overflow: visible !important; display: block !important; }
+            #stage-scroll-area { overflow: visible !important; padding: 0 !important; }
+            .print-hidden { display: none !important; }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col selection:bg-indigo-200 selection:text-indigo-900">
+
+    <canvas id="confetti-canvas" class="print-hidden"></canvas>
+    <div id="toast-container" class="print-hidden fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
 
     <!-- ===================================================================== -->
-    <!-- TELA 1: CONTROLE DO ALUNO (EXIBIDA AUTOMATICAMENTE VIA QR CODE)       -->
+    <!-- CONTROLE DO ALUNO (EXIBIDO NO CELULAR AO ESCANEAR O QR CODE)          -->
     <!-- ===================================================================== -->
     <section id="student-app" class="hidden flex-1 flex flex-col max-w-md w-full mx-auto p-4 justify-between">
         <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
@@ -28,13 +81,12 @@
                 <span id="stu-room-badge" class="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Sala: ---</span>
                 <h1 id="stu-group-title" class="font-display font-bold text-lg text-slate-900 mt-0.5">Entrar no Jogo</h1>
             </div>
-            <span id="stu-status-dot" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Conectado"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Conectado"></span>
         </header>
 
-        <!-- Passo A: Identificação do Grupo -->
-        <div id="stu-join-view" class="my-auto bg-white rounded-3xl shadow-lg border border-slate-200 p-6">
+        <div id="stu-join-view" class="my-auto bg-white rounded-3xl shadow-lg border border-slate-200 p-6 animate-stage-in">
             <h2 class="font-display text-2xl font-bold text-slate-900 mb-2">Qual é o nome do seu grupo?</h2>
-            <p class="text-sm text-slate-600 font-semibold mb-4">Apenas 1 celular por grupo (o tesoureiro). Debatam antes de enviar!</p>
+            <p class="text-sm text-slate-600 font-semibold mb-4">Apenas 1 celular por grupo (o tesoureiro). Debatam os cálculos antes de enviar!</p>
             <input id="stu-name-input" type="text" maxlength="28" placeholder="Ex.: Equipe Economia Criativa"
                 class="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-base mb-4">
             <button onclick="studentJoinRoom()"
@@ -43,31 +95,22 @@
             </button>
         </div>
 
-        <!-- Passo B: Painel do Grupo + Controle de Respostas -->
         <div id="stu-controller-view" class="hidden flex-1 flex flex-col gap-4 my-4">
             <div class="grid grid-cols-2 gap-2.5">
-                <div class="bg-white rounded-2xl p-3 border border-indigo-100 shadow-sm">
-                    <span class="text-[10px] font-extrabold uppercase text-indigo-500 block">💰 Saldo Conta</span>
-                    <strong id="stu-saldo" class="text-base font-black text-indigo-950 tabular-nums">R$ 200,00</strong>
+                <div class="bg-white rounded-2xl p-3 border border-amber-200 shadow-sm text-center">
+                    <span class="text-[10px] font-extrabold uppercase text-amber-600 block">🏛️ Pontos do Grupo</span>
+                    <strong id="stu-pontos" class="text-xl font-black text-amber-900 tabular-nums">0 pts</strong>
                 </div>
-                <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm">
-                    <span class="text-[10px] font-extrabold uppercase text-emerald-600 block">🛡️ Reserva</span>
-                    <strong id="stu-reserva" class="text-base font-black text-emerald-900 tabular-nums">R$ 0,00</strong>
-                </div>
-                <div class="bg-white rounded-2xl p-3 border border-sky-100 shadow-sm">
-                    <span class="text-[10px] font-extrabold uppercase text-sky-600 block">😊 Bem-Estar</span>
-                    <strong id="stu-bemestar" class="text-base font-black text-sky-900 tabular-nums">80%</strong>
-                </div>
-                <div class="bg-white rounded-2xl p-3 border border-amber-100 shadow-sm">
-                    <span class="text-[10px] font-extrabold uppercase text-amber-600 block">🏛️ Cidadania</span>
-                    <strong id="stu-cidadania" class="text-base font-black text-amber-900 tabular-nums">0 pts</strong>
+                <div class="bg-white rounded-2xl p-3 border border-emerald-200 shadow-sm text-center">
+                    <span class="text-[10px] font-extrabold uppercase text-emerald-600 block">✅ Acertos</span>
+                    <strong id="stu-acertos" class="text-xl font-black text-emerald-900 tabular-nums">0</strong>
                 </div>
             </div>
 
             <div id="stu-action-area" class="flex-1 bg-white rounded-3xl shadow-md border border-slate-200 p-5 flex flex-col justify-center">
                 <div class="text-center text-slate-500 font-bold">
                     <span class="text-4xl block mb-2">👀</span>
-                    Aguardando o professor abrir o próximo desafio no telão...
+                    Acompanhe a história da Família Silva no telão! Os botões aparecerão aqui quando surgir um desafio.
                 </div>
             </div>
         </div>
@@ -78,110 +121,276 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- TELA 2: TELÃO DO PROFESSOR (HOST)                                     -->
+    <!-- TELA INICIAL (LOBBY DO JOGO COMPLETO)                                 -->
     <!-- ===================================================================== -->
-    <section id="host-app" class="hidden flex-1 flex flex-col">
-        <header class="bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm px-4 py-3">
-            <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <span class="font-display font-bold text-lg text-slate-900">🎓 Desafio do Orçamento Familiar</span>
-                    <span id="host-room-pill" class="hidden bg-indigo-600 text-white text-xs font-extrabold px-3 py-1 rounded-full">Sala: ---</span>
+    <section id="lobby-screen" class="hidden flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div class="max-w-5xl w-full bg-white/95 backdrop-blur-md rounded-3xl shadow-xl border border-white p-6 sm:p-10 animate-stage-in">
+
+            <div class="text-center max-w-3xl mx-auto">
+                <div class="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold tracking-wide mb-4">
+                    <span>🎓</span>
+                    <span>Produto Educacional Interativo • 8º e 9º Anos • Educação Financeira Consciente</span>
                 </div>
+                <h1 class="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-tight mb-3">
+                    Desafio do Orçamento Familiar:
+                    <span class="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-sky-500">
+                        você consegue fechar a conta?
+                    </span>
+                </h1>
+                <p class="text-slate-600 text-base sm:text-lg font-semibold leading-relaxed">
+                    Assuma o planejamento financeiro mensal da <strong>Família Silva</strong> em grupos de 2 a 4 estudantes. Equilibrem <strong>orçamento, reserva de emergência, bem-estar familiar e cidadania fiscal</strong>!
+                </p>
+            </div>
+
+            <!-- Retomar Campanha Salva -->
+            <div id="resume-campaign-banner" class="hidden mt-6 bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">💾</span>
+                    <div>
+                        <h3 class="font-extrabold text-emerald-950 text-sm sm:text-base">Campanha em andamento encontrada!</h3>
+                        <p id="resume-campaign-info" class="text-xs font-semibold text-emerald-800"></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button onclick="resumeSavedGame()" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm transition shadow-sm">
+                        ▶ Continuar Campanha
+                    </button>
+                    <button onclick="clearSavedGame()" class="px-3 py-2.5 rounded-xl bg-white hover:bg-rose-50 border border-emerald-200 text-slate-600 hover:text-rose-700 font-extrabold text-xs transition" title="Descartar">
+                        🗑️
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vitrine Interativa da Família Silva -->
+            <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center bg-slate-50/90 border border-slate-200/80 rounded-2xl p-5 sm:p-6">
+                <div class="lg:col-span-7">
+                    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Conheça a Família Silva (clique para interagir)</span>
+                        <span id="lobby-char-quote" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">4 Fases • Saldo inicial: R$ 200,00</span>
+                    </div>
+                    <div id="lobby-family-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+                </div>
+
+                <div class="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <label for="team-name-input" class="block text-sm font-extrabold text-slate-700 mb-1.5">
+                        Nome da Turma / Equipe <span class="text-slate-400 font-semibold">(opcional)</span>
+                    </label>
+                    <input id="team-name-input" type="text" maxlength="32" placeholder="Ex.: 9º Ano A • Equipe Economia"
+                        class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none text-sm font-bold text-slate-800 transition">
+
+                    <div class="mt-4 flex items-center justify-between text-xs font-bold text-slate-500 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-100">
+                        <span>📅 <strong>4 Fases (Meses 1 a 4)</strong></span>
+                        <span>👥 <strong>2 a 4 alunos</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trilha das 4 Fases -->
+            <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div class="bg-sky-50/80 border border-sky-200 rounded-2xl p-4 flex items-start gap-3">
+                    <span class="text-2xl bg-white p-2 rounded-xl shadow-sm">🌱</span>
+                    <div><h3 class="font-bold text-slate-800 text-sm">Fase 1 • Mês 1 (Base)</h3><p class="text-xs text-slate-600 font-semibold mt-0.5">Orçamento equilibrado para construir sua reserva.</p></div>
+                </div>
+                <div class="bg-indigo-50/80 border border-indigo-200 rounded-2xl p-4 flex items-start gap-3">
+                    <span class="text-2xl bg-white p-2 rounded-xl shadow-sm">📊</span>
+                    <div><h3 class="font-bold text-slate-800 text-sm">Fase 2 • Mês 2 (Reajuste)</h3><p class="text-xs text-slate-600 font-semibold mt-0.5">Contas sobem +8%, bandeira amarela e mais desafios.</p></div>
+                </div>
+                <div class="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                    <span class="text-2xl bg-white p-2 rounded-xl shadow-sm">⚡</span>
+                    <div><h3 class="font-bold text-slate-800 text-sm">Fase 3 • Mês 3 (Pressão)</h3><p class="text-xs text-slate-600 font-semibold mt-0.5">Inflação nos alimentos, bandeira vermelha e ajustes.</p></div>
+                </div>
+                <div class="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 flex items-start gap-3">
+                    <span class="text-2xl bg-white p-2 rounded-xl shadow-sm">🏆</span>
+                    <div><h3 class="font-bold text-slate-800 text-sm">Fase 4 • Mês 4 (Crise)</h3><p class="text-xs text-slate-600 font-semibold mt-0.5">Teste final: margem curta e escolhas conscientes.</p></div>
+                </div>
+            </div>
+
+            <!-- Botões Principais -->
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
+                <button onclick="startGame(false, true)"
+                    class="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-base shadow-lg transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                    <span>📱 Modo Turma (QR Code + Celular)</span>
+                </button>
+                <button onclick="startGame(false, false)"
+                    class="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-extrabold text-base shadow-lg transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                    <span>▶ Campanha Individual / Offline</span>
+                </button>
+                <button onclick="startGame(true, false)"
+                    class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-800 border-2 border-purple-200 font-extrabold text-sm transition flex items-center justify-center gap-2">
+                    <span>🧪 Modo Demo</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TELA PRINCIPAL DO JOGO (3 ZONAS: HUD + PALCO + VISUAL NOVEL)          -->
+    <!-- ===================================================================== -->
+    <div id="game-shell" class="hidden h-screen flex-col overflow-hidden">
+
+        <!-- ZONA 1: HUD SUPERIOR -->
+        <header class="print-hidden bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm shrink-0 z-30">
+            <div class="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2">
+
+                <!-- Esquerda: Fase + Dia -->
                 <div class="flex items-center gap-2">
-                    <button onclick="openQRModal()" id="btn-show-qr" class="hidden px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 text-xs font-extrabold transition">
-                        📱 QR Code (<span id="host-group-count">0</span> grupos)
+                    <div id="hud-phase-badge" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl shadow-sm flex flex-col justify-center">
+                        <span id="hud-phase-label" class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 leading-none">Fase 1/4 • Mês 1</span>
+                        <span id="hud-difficulty-label" class="text-[11px] font-bold text-slate-200 leading-tight mt-0.5">Nível Base</span>
+                    </div>
+                    <div class="bg-gradient-to-br from-indigo-600 to-blue-600 text-white px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1.5">
+                        <span class="text-xs font-extrabold uppercase opacity-85">Dia</span>
+                        <span id="hud-day" class="font-display text-xl font-bold leading-none tabular-nums">01</span>
+                    </div>
+                    <div class="hidden xl:flex flex-col">
+                        <span id="hud-milestone-name" class="text-xs font-extrabold text-slate-800 leading-tight">Ponto de Partida</span>
+                        <div id="hud-progress-dots" class="flex items-center gap-1.5 mt-1"></div>
+                    </div>
+                </div>
+
+                <!-- Centro: 4 Pílulas Financeiras -->
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
+                    <div id="hud-balance-card" class="relative bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 transition-all">
+                        <span class="text-sm">💰</span>
+                        <div>
+                            <div class="flex items-center gap-1">
+                                <span class="block text-[9px] font-extrabold uppercase text-indigo-500 leading-none">Saldo Conta</span>
+                                <span id="hud-balance-delta" class="hidden text-[9px] font-black px-1 rounded tabular-nums"></span>
+                            </div>
+                            <span id="hud-balance" class="text-xs sm:text-sm font-black text-indigo-900 tabular-nums">R$ 200,00</span>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <span class="text-sm">🛡️</span>
+                        <div>
+                            <span class="block text-[9px] font-extrabold uppercase text-emerald-600 leading-none">Reserva</span>
+                            <span id="hud-reserve" class="text-xs sm:text-sm font-black text-emerald-800 tabular-nums">R$ 0,00</span>
+                        </div>
+                    </div>
+                    <div class="bg-sky-50 border border-sky-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <span id="hud-wellbeing-icon" class="text-sm">😊</span>
+                        <div>
+                            <span class="block text-[9px] font-extrabold uppercase text-sky-600 leading-none">Bem-Estar</span>
+                            <span id="hud-wellbeing" class="text-xs sm:text-sm font-black text-sky-900 tabular-nums">80%</span>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <span class="text-sm">🏛️</span>
+                        <div>
+                            <span class="block text-[9px] font-extrabold uppercase text-amber-600 leading-none">Cidadania</span>
+                            <span id="hud-fiscal" class="text-xs sm:text-sm font-black text-amber-800 tabular-nums">0 pts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Direita: Utilitários + Controles do Modo Turma -->
+                <div class="flex items-center gap-1.5">
+                    <button id="btn-hud-qr" onclick="openQRModal()" class="hidden px-2.5 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-900 text-xs font-extrabold transition flex items-center gap-1" title="Ver QR Code da Turma">
+                        <span>📱</span><span id="hud-group-count">0</span>
                     </button>
-                    <button onclick="openLeaderboardModal()" id="btn-show-rank" class="hidden px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-extrabold transition">
-                        🏆 Placar da Turma
+                    <button id="btn-hud-rank" onclick="openLeaderboardModal()" class="hidden px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-extrabold transition" title="Placar da Turma">
+                        🏆
                     </button>
-                    <button onclick="exportClassCSV()" id="btn-export-csv" class="hidden px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition">
-                        📥 Exportar CSV
-                    </button>
+                    <div class="hidden sm:flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-1.5 rounded-xl text-xs font-extrabold text-slate-700 tabular-nums">
+                        <span>⏱️</span><span id="hud-timer">00:00</span>
+                    </div>
+                    <button onclick="toggleCalculator()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-sm font-bold" title="Calculadora">🧮</button>
+                    <button id="btn-sound-toggle" onclick="toggleSound()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-sm font-bold" title="Som">🔊</button>
+                    <button onclick="toggleRulesModal(true)" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-sm font-bold" title="Regras">📋</button>
+                    <button id="btn-demo-toggle" onclick="toggleDemoMode()" class="px-2 py-1.5 rounded-xl bg-purple-100 hover:bg-purple-200 border border-purple-300 text-purple-800 text-xs font-extrabold transition" title="Modo Demo">🧪</button>
+                </div>
+            </div>
+
+            <!-- Barra do Apresentador (Modo Demo) -->
+            <div id="demo-presenter-bar" class="hidden bg-purple-900 text-white border-t border-purple-700 px-3 py-2">
+                <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-extrabold text-purple-200 uppercase">🧪 Demo:</span>
+                        <button onclick="demoSimulateNext()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-3 py-1 rounded-lg">⏭️ Simular Etapa</button>
+                        <button onclick="demoJumpToEnd()" class="bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold px-3 py-1 rounded-lg">🏁 Fechar Mês</button>
+                        <div class="flex items-center gap-1 border-l border-purple-700 pl-2" id="demo-phase-shortcuts"></div>
+                    </div>
+                    <div class="flex items-center gap-1 overflow-x-auto py-0.5" id="demo-day-shortcuts"></div>
                 </div>
             </div>
         </header>
 
-        <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
-            <div id="host-lobby" class="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 sm:p-10 text-center">
-                <h1 class="font-display text-3xl sm:text-4xl font-bold text-slate-900 mb-3">
-                    Modo Turma Interativo (Telão + Celular)
-                </h1>
-                <p class="text-slate-600 font-semibold max-w-2xl mx-auto mb-8">
-                    Crie uma sala para projetar o QR Code. Cada grupo entra pelo celular com seu nome e responde às questões e decisões financeiras em tempo real!
-                </p>
-                <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <button onclick="hostCreateRoom()"
-                        class="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-lg transition">
-                        🚀 Criar Sala com QR Code
-                    </button>
-                </div>
-            </div>
-
-            <div id="host-stage" class="hidden space-y-5">
-                <div id="host-question-card" class="bg-white rounded-3xl shadow-md border border-slate-200 p-6 sm:p-8"></div>
-
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5">
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                        <h3 class="font-display font-bold text-base text-slate-900">📡 Monitor de Respostas ao Vivo</h3>
-                        <div class="flex items-center gap-2">
-                            <button id="btn-reveal-answers" onclick="hostRevealAndGrade()"
-                                class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold shadow-sm transition">
-                                ✅ Encerrar e Pontuar Turma
-                            </button>
-                            <button id="btn-next-stage" onclick="hostNextStage()"
-                                class="hidden px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-extrabold shadow-sm transition">
-                                Próximo Marco ▶
-                            </button>
-                        </div>
-                    </div>
-                    <div id="host-live-monitor" class="flex flex-wrap gap-2">
-                        <span class="text-xs text-slate-400 font-bold">Aguardando grupos entrarem na sala...</span>
-                    </div>
-                </div>
-            </div>
+        <!-- ZONA 2: PALCO CENTRAL -->
+        <main id="stage-scroll-area" class="flex-1 overflow-y-auto px-4 sm:px-6 py-5 sm:py-7">
+            <div id="stage-container" class="max-w-5xl mx-auto pb-6"></div>
         </main>
-    </section>
 
-    <!-- MODAL: QR CODE -->
-    <div id="qr-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center shadow-2xl">
-            <h2 class="font-display text-2xl font-bold text-slate-900 mb-1">Escaneie para Entrar na Sala</h2>
-            <p class="text-sm text-slate-600 font-semibold mb-4">1 celular por grupo • Código: <strong id="qr-room-code" class="text-indigo-600">---</strong></p>
+        <!-- ZONA 3: DIÁLOGO VISUAL NOVEL ANIMADO -->
+        <footer class="print-hidden bg-white/95 backdrop-blur-md border-t-2 border-indigo-100 shadow-[0_-6px_25px_rgba(15,23,42,0.06)] shrink-0 z-20">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-4 sm:gap-5">
+                <div class="flex flex-col items-center shrink-0">
+                    <div id="vn-avatar-box" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-slate-100 to-slate-200/80 border-2 border-indigo-200 p-1 shadow-sm flex items-center justify-center overflow-visible"></div>
+                    <div id="vn-family-strip" class="flex items-center gap-1 mt-1.5"></div>
+                </div>
 
-            <div id="qrcode-box" class="inline-block p-4 bg-white border-4 border-indigo-100 rounded-2xl shadow-inner mb-4"></div>
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono text-slate-600 break-all mb-4" id="qr-url-text"></div>
+                <div class="flex-1 bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 relative">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
+                        <div class="flex items-center gap-2">
+                            <span id="vn-speaker-name" class="font-display font-bold text-sm sm:text-base text-slate-900">Ana Silva</span>
+                            <span id="vn-speaker-role" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800">Mãe • Planejamento</span>
+                        </div>
+                        <span id="vn-dialogue-counter" class="text-[11px] font-bold text-slate-400">1 / 2</span>
+                    </div>
 
+                    <p id="vn-dialogue-text" class="text-slate-700 font-semibold text-sm sm:text-base leading-relaxed min-h-[2.75rem]"></p>
+
+                    <div class="mt-2 flex items-center justify-end gap-2">
+                        <span id="vn-stage-hint" class="hidden text-xs font-extrabold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">
+                            👆 Resolva a atividade no palco acima para continuar
+                        </span>
+                        <button id="vn-next-btn" onclick="advanceDialogue()"
+                            class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center gap-1.5">
+                            <span>Continuar fala</span><span>▶</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- MODAL: QR CODE DA TURMA -->
+    <div id="qr-modal" class="print-hidden hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center shadow-2xl animate-stage-in">
+            <h2 class="font-display text-2xl font-bold text-slate-900 mb-1">📱 Escaneie para Entrar na Sala</h2>
+            <p class="text-sm text-slate-600 font-semibold mb-4">1 celular por grupo • Sala: <strong id="qr-room-code" class="text-indigo-600">---</strong></p>
+            <div id="qrcode-box" class="inline-block p-4 bg-white border-4 border-indigo-100 rounded-2xl shadow-inner mb-3"></div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 text-[11px] font-mono text-slate-600 break-all mb-4" id="qr-url-text"></div>
             <div class="text-left mb-5">
                 <span class="text-xs font-extrabold uppercase text-slate-500 block mb-2">Grupos Conectados:</span>
-                <div id="qr-connected-list" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                <div id="qr-connected-list" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
                     <span class="text-xs text-slate-400 font-semibold">Nenhum grupo conectado ainda...</span>
                 </div>
             </div>
-
-            <button onclick="closeQRModalAndStart()"
+            <button onclick="document.getElementById('qr-modal').classList.add('hidden')"
                 class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md transition">
-                Fechar e Ir para o Jogo ▶
+                Fechar e Continuar no Jogo ▶
             </button>
         </div>
     </div>
 
-    <!-- MODAL: PLACAR -->
-    <div id="leaderboard-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl max-h-[85vh] flex flex-col">
+    <!-- MODAL: PLACAR DA TURMA -->
+    <div id="leaderboard-modal" class="print-hidden hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl max-h-[85vh] flex flex-col animate-stage-in">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="font-display text-2xl font-bold text-slate-900">🏆 Placar Comparativo da Turma</h2>
-                <button onclick="document.getElementById('leaderboard-modal').classList.add('hidden')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">&times;</button>
+                <h2 class="font-display text-2xl font-bold text-slate-900">🏆 Placar dos Grupos</h2>
+                <div class="flex items-center gap-2">
+                    <button onclick="exportClassCSV()" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold">📥 CSV</button>
+                    <button onclick="document.getElementById('leaderboard-modal').classList.add('hidden')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">&times;</button>
+                </div>
             </div>
             <div class="overflow-x-auto flex-1">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
                         <tr class="border-b-2 border-slate-200 text-xs uppercase text-slate-500">
-                            <th class="py-2.5 px-3">Grupo</th>
-                            <th class="py-2.5 px-3 text-right">💰 Saldo</th>
-                            <th class="py-2.5 px-3 text-right">🛡️ Reserva</th>
-                            <th class="py-2.5 px-3 text-center">😊 Bem-Estar</th>
-                            <th class="py-2.5 px-3 text-center">🏛️ Cidadania</th>
-                            <th class="py-2.5 px-3 text-center">Acertos</th>
+                            <th class="py-2 px-3">#</th>
+                            <th class="py-2 px-3">Grupo</th>
+                            <th class="py-2 px-3 text-center">✅ Acertos</th>
+                            <th class="py-2 px-3 text-right">🏛️ Pontos</th>
                         </tr>
                     </thead>
                     <tbody id="leaderboard-tbody" class="divide-y divide-slate-100 font-bold"></tbody>
@@ -190,9 +399,65 @@
         </div>
     </div>
 
+    <!-- CALCULADORA FLUTUANTE -->
+    <div id="calculator-modal" class="print-hidden hidden fixed bottom-28 right-4 sm:right-8 w-72 bg-white rounded-2xl shadow-2xl border-2 border-slate-200 z-40 overflow-hidden animate-stage-in">
+        <div class="bg-slate-800 text-white px-4 py-2.5 flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider">🧮 Calculadora (Teclado OK)</span>
+            <button onclick="toggleCalculator()" class="text-slate-300 hover:text-white font-bold text-lg leading-none">&times;</button>
+        </div>
+        <div class="p-3.5 bg-slate-50">
+            <input id="calc-screen" type="text" readonly value="0" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-right font-black text-xl text-slate-800 tabular-nums mb-3 shadow-inner">
+            <div class="grid grid-cols-4 gap-1.5 text-sm font-extrabold">
+                <button onclick="calcPress('C')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 py-2.5 rounded-xl">C</button>
+                <button onclick="calcPress('BACK')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 py-2.5 rounded-xl">⌫</button>
+                <button onclick="calcPress('%')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2.5 rounded-xl">%</button>
+                <button onclick="calcPress('/')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2.5 rounded-xl">÷</button>
+                <button onclick="calcPress('7')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">7</button>
+                <button onclick="calcPress('8')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">8</button>
+                <button onclick="calcPress('9')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">9</button>
+                <button onclick="calcPress('*')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2.5 rounded-xl">×</button>
+                <button onclick="calcPress('4')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">4</button>
+                <button onclick="calcPress('5')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">5</button>
+                <button onclick="calcPress('6')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">6</button>
+                <button onclick="calcPress('-')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2.5 rounded-xl">−</button>
+                <button onclick="calcPress('1')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">1</button>
+                <button onclick="calcPress('2')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">2</button>
+                <button onclick="calcPress('3')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">3</button>
+                <button onclick="calcPress('+')" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2.5 rounded-xl">+</button>
+                <button onclick="calcPress('0')" class="col-span-2 bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">0</button>
+                <button onclick="calcPress(',')" class="bg-white hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl">,</button>
+                <button onclick="calcPress('=')" class="bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-xl">=</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE REGRAS -->
+    <div id="rules-modal" class="print-hidden hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto animate-stage-in">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+                <h2 class="text-2xl font-bold text-slate-900">📋 Regras &amp; Educação Financeira Consciente</h2>
+                <button onclick="toggleRulesModal(false)" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">&times;</button>
+            </div>
+            <div class="space-y-4 text-sm text-slate-700 font-semibold">
+                <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4">
+                    <h3 class="font-extrabold text-indigo-900 mb-1">🎯 Os 4 Pilares</h3>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>Saldo em Conta:</strong> Se fechar negativo, sofre <strong>8% de juros</strong> no mês seguinte.</li>
+                        <li><strong>Reserva de Emergência (🛡️):</strong> 15% separados no Dia 05, acionados automaticamente em emergências.</li>
+                        <li><strong>Bem-Estar Familiar (😊):</strong> Equilíbrio entre economizar e manter qualidade de vida.</li>
+                        <li><strong>Cidadania Fiscal (🏛️):</strong> Pontos por acertos matemáticos, CPF na Nota e sustentabilidade.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="toggleRulesModal(false)" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm">Voltar ao jogo</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // =====================================================================
-        // 1. CONFIGURAÇÃO DO FIREBASE (JÁ PREENCHIDA)
+        // 1. FIREBASE REALTIME DATABASE (SUAS CREDENCIAIS JÁ PREENCHIDAS)
         // =====================================================================
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyBpToRSI6Uh6PQE8DEOVRsbIo01mOSu4fo",
@@ -204,339 +469,172 @@
             appId: "1:707296052535:web:965f7f11e0d9e52b1086b2"
         };
 
-        firebase.initializeApp(FIREBASE_CONFIG);
-        const db = firebase.database();
+        let db = null;
+        try {
+            firebase.initializeApp(FIREBASE_CONFIG);
+            db = firebase.database();
+        } catch (e) { console.warn('Firebase offline:', e); }
 
-        function formatBRL(v) {
-            return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
+        const Classroom = {
+            active: false,
+            roomCode: null,
+            groups: {},
+            currentCorrectLetter: null,
+            activeWidgetId: null,
 
-        // =====================================================================
-        // 2. ROTEIRO DE ETAPAS SINCRONIZADAS
-        // =====================================================================
-        const STAGES = [
-            {
-                id: 'dia05_reserva',
-                type: 'mcq',
-                badge: '🛡️ Dia 05 • Pague-se Primeiro',
-                title: 'Salário na Conta: Construindo a Reserva (15%)',
-                context: 'A família tinha R$ 200,00 e recebeu R$ 4.200,00 de salários. Quanto corresponde a 15% dos salários para transferir à Reserva de Emergência?',
-                options: [
-                    { key: 'A', label: 'R$ 420,00' },
-                    { key: 'B', label: 'R$ 630,00' },
-                    { key: 'C', label: 'R$ 840,00' },
-                    { key: 'D', label: 'R$ 510,00' }
-                ],
-                correctKey: 'B',
-                applyToGroup(grp, answer) {
-                    const isCorrect = answer === 'B';
-                    return {
-                        saldo: grp.saldo + 4200 - 630,
-                        reserva: grp.reserva + 630,
-                        bemEstar: grp.bemEstar,
-                        cidadania: grp.cidadania + (isCorrect ? 20 : 0),
-                        acertos: grp.acertos + (isCorrect ? 1 : 0)
-                    };
-                }
+            createRoom() {
+                if (!db) return showToast('Sem conexão com Firebase.', 'warning');
+                this.active = true;
+                this.roomCode = 'TURMA-' + Math.floor(100 + Math.random() * 900);
+                db.ref(`salas/${this.roomCode}`).set({ criadaEm: Date.now(), perguntaAtual: null });
+
+                document.getElementById('btn-hud-qr').classList.remove('hidden');
+                document.getElementById('btn-hud-rank').classList.remove('hidden');
+
+                db.ref(`salas/${this.roomCode}/grupos`).on('value', (snap) => {
+                    this.groups = snap.val() || {};
+                    this.updateMonitors();
+                });
+                openQRModal();
             },
-            {
-                id: 'dia10_padrao',
-                type: 'decision',
-                badge: '⚖️ Dia 10 • Consumo Consciente',
-                title: 'Ajuste dos Gastos Variáveis da Família',
-                context: 'Cada grupo escolhe no celular como vai conduzir Supermercado e Lazer neste mês. Não há resposta única — avaliem o equilíbrio!',
-                options: [
-                    { key: 'MANTER', label: '🍕 Manter Padrão (Economia R$ 0 | +5% Bem-Estar)' },
-                    { key: 'EQUILIBRADO', label: '🥗 Plano Equilibrado (+R$ 150 | +5% Bem-Estar)' },
-                    { key: 'RADICAL', label: '✂️ Corte Radical (+R$ 280 | −15% Bem-Estar)' }
-                ],
-                correctKey: null,
-                applyToGroup(grp, answer) {
-                    if (answer === 'EQUILIBRADO') {
-                        return { ...grp, saldo: grp.saldo + 150, bemEstar: Math.min(100, grp.bemEstar + 5), cidadania: grp.cidadania + 15 };
-                    }
-                    if (answer === 'RADICAL') {
-                        return { ...grp, saldo: grp.saldo + 280, bemEstar: Math.max(0, grp.bemEstar - 15) };
-                    }
-                    return { ...grp, bemEstar: Math.min(100, grp.bemEstar + 5) };
-                }
+
+            publishQuestion(widgetId, title, options) {
+                if (!this.active || !db) return;
+                this.activeWidgetId = widgetId;
+                const correctOpt = options.find(o => o.isCorrect);
+                this.currentCorrectLetter = correctOpt ? correctOpt.letter : null;
+
+                const updates = {};
+                Object.keys(this.groups).forEach(gid => {
+                    updates[`salas/${this.roomCode}/grupos/${gid}/respostaAtual`] = null;
+                });
+                updates[`salas/${this.roomCode}/perguntaAtual`] = {
+                    title,
+                    options: options.map(o => ({ key: o.letter, label: o.label })),
+                    revelada: false
+                };
+                db.ref().update(updates);
             },
-            {
-                id: 'dia18_saude',
-                type: 'mcq',
-                badge: '🏥 Dia 18 • Saúde & CPF na Nota',
-                title: 'Desconto com Genérico + Nota Fiscal Cidadã',
-                context: 'O tratamento custa R$ 180,00, mas com genérico e CPF na Nota há 35% de desconto. Quanto a família vai pagar?',
-                options: [
-                    { key: 'A', label: 'R$ 63,00' },
-                    { key: 'B', label: 'R$ 145,00' },
-                    { key: 'C', label: 'R$ 117,00' },
-                    { key: 'D', label: 'R$ 125,00' }
-                ],
-                correctKey: 'C',
-                applyToGroup(grp, answer) {
-                    const isCorrect = answer === 'C';
-                    return {
-                        saldo: grp.saldo - 117,
-                        reserva: grp.reserva,
-                        bemEstar: Math.min(100, grp.bemEstar + 5),
-                        cidadania: grp.cidadania + (isCorrect ? 25 : 10),
-                        acertos: grp.acertos + (isCorrect ? 1 : 0)
-                    };
+
+            gradeGroups() {
+                if (!this.active || !db || !this.currentCorrectLetter) return;
+                const updates = {};
+                Object.entries(this.groups).forEach(([gid, g]) => {
+                    if (g.respostaAtual === this.currentCorrectLetter) {
+                        updates[`salas/${this.roomCode}/grupos/${gid}/pontos`] = (g.pontos || 0) + 20;
+                        updates[`salas/${this.roomCode}/grupos/${gid}/acertos`] = (g.acertos || 0) + 1;
+                    }
+                });
+                updates[`salas/${this.roomCode}/perguntaAtual/revelada`] = true;
+                db.ref().update(updates);
+                showToast('🏆 Pontuação atualizada nos celulares dos grupos!', 'success');
+            },
+
+            clearQuestion() {
+                if (!this.active || !db) return;
+                db.ref(`salas/${this.roomCode}/perguntaAtual`).set(null);
+            },
+
+            updateMonitors() {
+                const list = Object.values(this.groups);
+                const countEl = document.getElementById('hud-group-count');
+                if (countEl) countEl.textContent = list.length;
+
+                const qrList = document.getElementById('qr-connected-list');
+                if (qrList) {
+                    qrList.innerHTML = list.length
+                        ? list.map(g => `<span class="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-extrabold">👥 ${g.nome}</span>`).join('')
+                        : '<span class="text-xs text-slate-400 font-semibold">Nenhum grupo conectado ainda...</span>';
+                }
+
+                if (this.activeWidgetId) {
+                    const liveBox = document.getElementById(`${this.activeWidgetId}-live-groups`);
+                    if (liveBox) {
+                        liveBox.innerHTML = list.length
+                            ? list.map(g => `<span class="px-2.5 py-1 rounded-xl text-xs font-extrabold border ${g.respostaAtual ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200 text-slate-500'}">${g.respostaAtual ? '✅' : '⏳'} ${g.nome}</span>`).join('')
+                            : '<span class="text-xs text-slate-400 font-semibold">Aguardando grupos escanearem o QR Code...</span>';
+                    }
                 }
             }
-        ];
-
-        // =====================================================================
-        // 3. LÓGICA DO TELÃO (HOST / PROFESSOR)
-        // =====================================================================
-        let hostRoomCode = null;
-        let hostStageIndex = 0;
-        let hostGroupsCache = {};
-
-        function hostCreateRoom() {
-            hostRoomCode = 'TURMA-' + Math.floor(100 + Math.random() * 900);
-            hostStageIndex = 0;
-
-            db.ref(`salas/${hostRoomCode}`).set({
-                criadaEm: Date.now(),
-                stageIndex: 0,
-                status: 'lobby',
-                perguntaAtual: null
-            });
-
-            document.getElementById('host-lobby').classList.add('hidden');
-            document.getElementById('host-stage').classList.remove('hidden');
-            document.getElementById('host-room-pill').textContent = `Sala: ${hostRoomCode}`;
-            document.getElementById('host-room-pill').classList.remove('hidden');
-            document.getElementById('btn-show-qr').classList.remove('hidden');
-            document.getElementById('btn-show-rank').classList.remove('hidden');
-            document.getElementById('btn-export-csv').classList.remove('hidden');
-
-            db.ref(`salas/${hostRoomCode}/grupos`).on('value', (snap) => {
-                hostGroupsCache = snap.val() || {};
-                renderHostMonitors();
-            });
-
-            openQRModal();
-        }
+        };
 
         function openQRModal() {
             const baseUrl = window.location.href.split('?')[0];
-            const studentUrl = `${baseUrl}?sala=${hostRoomCode}&modo=aluno`;
-
-            document.getElementById('qr-room-code').textContent = hostRoomCode;
+            const studentUrl = `${baseUrl}?sala=${Classroom.roomCode}&modo=aluno`;
+            document.getElementById('qr-room-code').textContent = Classroom.roomCode;
             document.getElementById('qr-url-text').textContent = studentUrl;
             const box = document.getElementById('qrcode-box');
             box.innerHTML = '';
-            new QRCode(box, { text: studentUrl, width: 200, height: 200 });
+            new QRCode(box, { text: studentUrl, width: 190, height: 190 });
             document.getElementById('qr-modal').classList.remove('hidden');
         }
 
-        function closeQRModalAndStart() {
-            document.getElementById('qr-modal').classList.add('hidden');
-            hostPublishCurrentStage();
-        }
-
-        function hostPublishCurrentStage() {
-            const stage = STAGES[hostStageIndex];
-            if (!stage) return;
-
-            const updates = {};
-            Object.keys(hostGroupsCache).forEach(gid => {
-                updates[`salas/${hostRoomCode}/grupos/${gid}/respostaAtual`] = null;
-            });
-            updates[`salas/${hostRoomCode}/stageIndex`] = hostStageIndex;
-            updates[`salas/${hostRoomCode}/status`] = 'aberta';
-            updates[`salas/${hostRoomCode}/perguntaAtual`] = {
-                id: stage.id,
-                type: stage.type,
-                title: stage.title,
-                options: stage.options,
-                revelada: false
-            };
-            db.ref().update(updates);
-
-            document.getElementById('btn-reveal-answers').classList.remove('hidden');
-            document.getElementById('btn-next-stage').classList.add('hidden');
-            document.getElementById('host-question-card').innerHTML = `
-                <span class="inline-block text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 mb-3">${stage.badge}</span>
-                <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900 mb-2">${stage.title}</h2>
-                <p class="text-slate-600 font-semibold text-base mb-5">${stage.context}</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    ${stage.options.map(opt => `
-                        <div id="host-opt-${opt.key}" class="p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 font-extrabold text-slate-800 flex items-center justify-between">
-                            <span><strong class="text-indigo-600 mr-2">${opt.key})</strong> ${opt.label}</span>
-                            <span class="opt-count text-xs px-2 py-0.5 rounded-lg bg-white border border-slate-200 hidden">0</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        function hostRevealAndGrade() {
-            const stage = STAGES[hostStageIndex];
-            const updates = {};
-            const counts = {};
-            stage.options.forEach(o => counts[o.key] = 0);
-
-            Object.entries(hostGroupsCache).forEach(([gid, grp]) => {
-                const ans = grp.respostaAtual;
-                if (ans && counts[ans] !== undefined) counts[ans]++;
-                const nextStats = stage.applyToGroup(grp, ans);
-                updates[`salas/${hostRoomCode}/grupos/${gid}/saldo`] = Math.round(nextStats.saldo * 100) / 100;
-                updates[`salas/${hostRoomCode}/grupos/${gid}/reserva`] = Math.round(nextStats.reserva * 100) / 100;
-                updates[`salas/${hostRoomCode}/grupos/${gid}/bemEstar`] = nextStats.bemEstar;
-                updates[`salas/${hostRoomCode}/grupos/${gid}/cidadania`] = nextStats.cidadania;
-                updates[`salas/${hostRoomCode}/grupos/${gid}/acertos`] = nextStats.acertos ?? grp.acertos;
-            });
-
-            updates[`salas/${hostRoomCode}/status`] = 'revelada';
-            updates[`salas/${hostRoomCode}/perguntaAtual/revelada`] = true;
-            db.ref().update(updates);
-
-            stage.options.forEach(opt => {
-                const el = document.getElementById(`host-opt-${opt.key}`);
-                if (!el) return;
-                const badge = el.querySelector('.opt-count');
-                badge.textContent = `${counts[opt.key]} grupo(s)`;
-                badge.classList.remove('hidden');
-                if (stage.correctKey === opt.key) {
-                    el.classList.remove('border-slate-200', 'bg-slate-50');
-                    el.classList.add('border-emerald-500', 'bg-emerald-50', 'ring-2', 'ring-emerald-200');
-                }
-            });
-
-            document.getElementById('btn-reveal-answers').classList.add('hidden');
-            if (hostStageIndex < STAGES.length - 1) {
-                document.getElementById('btn-next-stage').classList.remove('hidden');
-            } else {
-                openLeaderboardModal();
-            }
-        }
-
-        function hostNextStage() {
-            hostStageIndex++;
-            hostPublishCurrentStage();
-        }
-
-        function renderHostMonitors() {
-            const list = Object.values(hostGroupsCache);
-            document.getElementById('host-group-count').textContent = list.length;
-
-            const qrList = document.getElementById('qr-connected-list');
-            qrList.innerHTML = list.length
-                ? list.map(g => `<span class="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-extrabold">👥 ${g.nome}</span>`).join('')
-                : '<span class="text-xs text-slate-400 font-semibold">Nenhum grupo conectado ainda...</span>';
-
-            const monitor = document.getElementById('host-live-monitor');
-            monitor.innerHTML = list.length
-                ? list.map(g => {
-                    const answered = Boolean(g.respostaAtual);
-                    return `<span class="px-3 py-1.5 rounded-xl text-xs font-extrabold border ${answered ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-slate-50 border-slate-200 text-slate-500'}">
-                        ${answered ? '✅' : '⏳'} ${g.nome}
-                    </span>`;
-                }).join('')
-                : '<span class="text-xs text-slate-400 font-bold">Aguardando grupos entrarem na sala...</span>';
-        }
-
         function openLeaderboardModal() {
-            const list = Object.values(hostGroupsCache).sort((a, b) => (b.saldo + b.reserva) - (a.saldo + a.reserva));
-            document.getElementById('leaderboard-tbody').innerHTML = list.map(g => `
-                <tr>
-                    <td class="py-3 px-3 text-slate-900">${g.nome}</td>
-                    <td class="py-3 px-3 text-right tabular-nums ${g.saldo < 0 ? 'text-rose-600' : 'text-indigo-900'}">${formatBRL(g.saldo)}</td>
-                    <td class="py-3 px-3 text-right tabular-nums text-emerald-700">${formatBRL(g.reserva)}</td>
-                    <td class="py-3 px-3 text-center">${g.bemEstar}%</td>
-                    <td class="py-3 px-3 text-center text-amber-700">${g.cidadania} pts</td>
-                    <td class="py-3 px-3 text-center">${g.acertos || 0}</td>
-                </tr>
-            `).join('');
+            const list = Object.values(Classroom.groups).sort((a, b) => (b.pontos || 0) - (a.pontos || 0));
+            document.getElementById('leaderboard-tbody').innerHTML = list.length
+                ? list.map((g, i) => `<tr><td class="py-2.5 px-3">${i + 1}º</td><td class="py-2.5 px-3 text-slate-900">${g.nome}</td><td class="py-2.5 px-3 text-center text-emerald-700">${g.acertos || 0}</td><td class="py-2.5 px-3 text-right text-amber-700">${g.pontos || 0} pts</td></tr>`).join('')
+                : '<tr><td colspan="4" class="py-6 text-center text-slate-400">Nenhum grupo conectado.</td></tr>';
             document.getElementById('leaderboard-modal').classList.remove('hidden');
         }
 
         function exportClassCSV() {
-            const list = Object.values(hostGroupsCache);
-            const rows = [['Grupo', 'Saldo', 'Reserva', 'Bem-Estar (%)', 'Cidadania (pts)', 'Acertos']];
-            list.forEach(g => rows.push([g.nome, g.saldo, g.reserva, g.bemEstar, g.cidadania, g.acertos || 0]));
-            const csv = rows.map(r => r.join(';')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const list = Object.values(Classroom.groups);
+            const rows = [['Grupo', 'Acertos', 'Pontos']];
+            list.forEach(g => rows.push([g.nome, g.acertos || 0, g.pontos || 0]));
+            const blob = new Blob([rows.map(r => r.join(';')).join('\n')], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `relatorio_${hostRoomCode}.csv`;
+            link.download = `placar_${Classroom.roomCode}.csv`;
             link.click();
         }
 
-        // =====================================================================
-        // 4. LÓGICA DO CONTROLE DO ALUNO (CELULAR)
-        // =====================================================================
-        let studentRoomCode = null;
-        let studentGroupId = null;
-
+        // Controle do Aluno (Celular)
+        let studentRoomCode = null, studentGroupId = null;
         function initStudentMode(roomCode) {
             studentRoomCode = roomCode;
             document.getElementById('student-app').classList.remove('hidden');
             document.getElementById('stu-room-badge').textContent = `Sala: ${roomCode}`;
-
             const savedId = localStorage.getItem(`stu_gid_${roomCode}`);
-            if (savedId) {
-                studentGroupId = savedId;
-                connectStudentListeners();
-            }
+            if (savedId) { studentGroupId = savedId; connectStudentListeners(); }
         }
 
         function studentJoinRoom() {
             const name = document.getElementById('stu-name-input').value.trim();
             if (!name) return alert('Digite o nome do seu grupo!');
-
             studentGroupId = 'grp_' + Math.random().toString(36).slice(2, 8);
             localStorage.setItem(`stu_gid_${studentRoomCode}`, studentGroupId);
-
             db.ref(`salas/${studentRoomCode}/grupos/${studentGroupId}`).set({
-                nome: name,
-                saldo: 200,
-                reserva: 0,
-                bemEstar: 80,
-                cidadania: 0,
-                acertos: 0,
-                respostaAtual: null
+                nome: name, pontos: 0, acertos: 0, respostaAtual: null
             }).then(() => connectStudentListeners());
         }
 
         function connectStudentListeners() {
             document.getElementById('stu-join-view').classList.add('hidden');
             document.getElementById('stu-controller-view').classList.remove('hidden');
-
             db.ref(`salas/${studentRoomCode}/grupos/${studentGroupId}`).on('value', (snap) => {
                 const g = snap.val();
                 if (!g) return;
                 document.getElementById('stu-group-title').textContent = g.nome;
-                document.getElementById('stu-saldo').textContent = formatBRL(g.saldo);
-                document.getElementById('stu-reserva').textContent = formatBRL(g.reserva);
-                document.getElementById('stu-bemestar').textContent = `${g.bemEstar}%`;
-                document.getElementById('stu-cidadania').textContent = `${g.cidadania} pts`;
+                document.getElementById('stu-pontos').textContent = `${g.pontos || 0} pts`;
+                document.getElementById('stu-acertos').textContent = g.acertos || 0;
             });
-
             db.ref(`salas/${studentRoomCode}/perguntaAtual`).on('value', (snap) => {
                 const q = snap.val();
                 const area = document.getElementById('stu-action-area');
-
                 if (!q) {
-                    area.innerHTML = `<div class="text-center text-slate-500 font-bold"><span class="text-4xl block mb-2">👀</span>Aguardando o professor iniciar...</div>`;
+                    area.innerHTML = `<div class="text-center text-slate-500 font-bold"><span class="text-4xl block mb-2">👀</span>Acompanhe a história da Família Silva no telão!</div>`;
                     return;
                 }
-
                 if (q.revelada) {
-                    area.innerHTML = `<div class="text-center text-indigo-700 font-extrabold"><span class="text-4xl block mb-2">📊</span>Resultado revelado no telão! Confira seu saldo acima.</div>`;
+                    area.innerHTML = `<div class="text-center text-indigo-700 font-extrabold"><span class="text-4xl block mb-2">📊</span>Resposta revelada no telão! Confira seus pontos acima.</div>`;
                     return;
                 }
-
                 area.innerHTML = `
-                    <h3 class="font-display font-bold text-lg text-slate-900 mb-3 text-center">${q.title}</h3>
+                    <h3 class="font-display font-bold text-base text-slate-900 mb-3 text-center">${q.title}</h3>
                     <div class="grid grid-cols-1 gap-2.5">
                         ${q.options.map(opt => `
                             <button onclick="studentSubmitAnswer('${opt.key}')"
-                                class="w-full p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-600 hover:text-white border-2 border-indigo-200 font-extrabold text-left text-sm sm:text-base transition active:scale-95">
+                                class="w-full p-3.5 rounded-2xl bg-indigo-50 hover:bg-indigo-600 hover:text-white border-2 border-indigo-200 font-extrabold text-left text-sm transition active:scale-95">
                                 <span class="mr-2">${opt.key})</span> ${opt.label}
                             </button>
                         `).join('')}
@@ -550,24 +648,759 @@
             document.getElementById('stu-action-area').innerHTML = `
                 <div class="text-center text-emerald-700 font-extrabold py-6">
                     <span class="text-5xl block mb-2">✅</span>
-                    Opção <strong>${choiceKey}</strong> enviada!<br>
-                    <span class="text-xs text-slate-500 font-semibold">Aguarde o professor encerrar a rodada no telão.</span>
+                    Alternativa <strong>${choiceKey}</strong> enviada!<br>
+                    <span class="text-xs text-slate-500 font-semibold">Aguarde o professor revelar no telão.</span>
                 </div>
             `;
         }
 
         // =====================================================================
-        // 5. ROTEAMENTO INICIAL (TELÃO vs. CELULAR)
+        // 2. UTILITÁRIOS, ÁUDIO, TOASTS, CONFETES E PERSONAGENS SVG
         // =====================================================================
-        window.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            const modo = params.get('modo');
-            const sala = params.get('sala');
+        const STORAGE_KEY = 'desafio_orcamento_familiar_v3';
+        function formatBRL(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-            if (modo === 'aluno' && sala) {
-                initStudentMode(sala);
+        const SoundFX = {
+            enabled: true, ctx: null,
+            play(type) {
+                if (!this.enabled) return;
+                try {
+                    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    if (type === 'click') { osc.type='sine'; osc.frequency.setValueAtTime(520,now); osc.frequency.exponentialRampToValueAtTime(680,now+0.06); gain.gain.setValueAtTime(0.08,now); gain.gain.exponentialRampToValueAtTime(0.001,now+0.07); osc.start(now); osc.stop(now+0.07); }
+                    else if (type === 'flip') { osc.type='triangle'; osc.frequency.setValueAtTime(340,now); osc.frequency.exponentialRampToValueAtTime(620,now+0.14); gain.gain.setValueAtTime(0.1,now); gain.gain.exponentialRampToValueAtTime(0.001,now+0.15); osc.start(now); osc.stop(now+0.15); }
+                    else if (type === 'success') { osc.type='triangle'; osc.frequency.setValueAtTime(523.25,now); osc.frequency.setValueAtTime(659.25,now+0.09); osc.frequency.setValueAtTime(783.99,now+0.18); gain.gain.setValueAtTime(0.12,now); gain.gain.exponentialRampToValueAtTime(0.001,now+0.35); osc.start(now); osc.stop(now+0.35); }
+                    else if (type === 'error') { osc.type='sawtooth'; osc.frequency.setValueAtTime(220,now); osc.frequency.linearRampToValueAtTime(150,now+0.22); gain.gain.setValueAtTime(0.09,now); gain.gain.exponentialRampToValueAtTime(0.001,now+0.24); osc.start(now); osc.stop(now+0.24); }
+                } catch (_) {}
+            }
+        };
+        function toggleSound() { SoundFX.enabled = !SoundFX.enabled; document.getElementById('btn-sound-toggle').textContent = SoundFX.enabled ? '🔊' : '🔇'; }
+
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toast-container');
+            if (!c) return;
+            const st = { info:'bg-slate-900 text-white border-slate-700', warning:'bg-amber-500 text-slate-950 border-amber-600', demo:'bg-purple-800 text-white border-purple-500', success:'bg-emerald-600 text-white border-emerald-500' };
+            const t = document.createElement('div');
+            t.className = `pointer-events-auto px-4 py-2.5 rounded-2xl border shadow-lg text-xs sm:text-sm font-extrabold animate-stage-in ${st[type] || st.info}`;
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 320); }, 3200);
+        }
+
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#06b6d4'];
+            const ps = Array.from({length: 65}, () => ({ x: Math.random()*canvas.width, y: -20-Math.random()*120, w: 8, h: 5, color: colors[Math.floor(Math.random()*colors.length)], vx: (Math.random()-0.5)*4, vy: 3+Math.random()*4, rot: Math.random()*6, vRot: (Math.random()-0.5)*0.2 }));
+            let f = 0;
+            (function anim() {
+                f++; ctx.clearRect(0,0,canvas.width,canvas.height);
+                ps.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.rot+=p.vRot; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.color; ctx.fillRect(-4,-2.5,p.w,p.h); ctx.restore(); });
+                if (f < 110) requestAnimationFrame(anim); else ctx.clearRect(0,0,canvas.width,canvas.height);
+            })();
+        }
+
+        const FAMILY = {
+            ana: { id:'ana', name:'Ana Silva', role:'Mãe • Planejamento', badgeClass:'bg-teal-100 text-teal-800', quote:'Separar 15% logo no Dia 05 constrói nossa Reserva de Emergência!' },
+            carlos: { id:'carlos', name:'Carlos Silva', role:'Pai • Controle de Contas', badgeClass:'bg-blue-100 text-blue-800', quote:'Ajustar gastos variáveis com equilíbrio protege o bolso e o bem-estar!' },
+            lucas: { id:'lucas', name:'Lucas Silva', role:'Filho (14) • Investimentos', badgeClass:'bg-indigo-100 text-indigo-800', quote:'Investir com consciência vence a inflação sem cair em promessas irreais!' },
+            maya: { id:'maya', name:'Maya Silva', role:'Filha (10) • Consumo Consciente', badgeClass:'bg-amber-100 text-amber-800', quote:'Pedir CPF na Nota e economizar luz ajuda o planeta e nosso bolso!' }
+        };
+
+        function buildCharacterSVG(id, mood = 'neutral') {
+            const m = {
+                feliz:'<path class="svg-mouth" d="M 41 64 Q 50 73 59 64 Z" fill="#e11d48" />',
+                surpreso:'<ellipse class="svg-mouth" cx="50" cy="66" rx="4.5" ry="6" fill="#be123c" />',
+                preocupado:'<path class="svg-mouth" d="M 42 68 Q 50 62 58 68" stroke="#881337" stroke-width="2.6" fill="none" stroke-linecap="round" />',
+                pensativo:'<path class="svg-mouth" d="M 44 66 L 56 64" stroke="#881337" stroke-width="2.6" fill="none" stroke-linecap="round" />',
+                doente:'<path class="svg-mouth" d="M 42 68 Q 46 64 50 67 Q 54 70 58 66" stroke="#881337" stroke-width="2.4" fill="none" stroke-linecap="round" />',
+                neutral:'<path class="svg-mouth" d="M 42 65 Q 50 70 58 65" stroke="#881337" stroke-width="2.6" fill="none" stroke-linecap="round" />'
+            }[mood] || '<path class="svg-mouth" d="M 42 65 Q 50 70 58 65" stroke="#881337" stroke-width="2.6" fill="none" stroke-linecap="round" />';
+
+            if (id === 'ana') return `<svg viewBox="0 0 100 100" class="w-full h-full overflow-visible"><circle cx="50" cy="50" r="46" fill="#ccfbf1"/><g class="svg-breathe"><path d="M 24 46 C 22 72, 26 86, 33 90 L 67 90 C 74 86, 78 72, 76 46 Z" fill="#4a2c18"/><path d="M 26 92 C 28 76, 72 76, 74 92 Z" fill="#0d9488"/><rect x="44" y="69" width="12" height="10" rx="4" fill="#f5cba7"/><ellipse cx="50" cy="50" rx="20" ry="23" fill="#fde0c2"/><path d="M 29 46 C 29 25, 71 25, 71 46 C 64 36, 46 35, 29 46 Z" fill="#5c3821"/><g class="svg-blink"><circle cx="41" cy="50" r="2.8" fill="#1e293b"/><circle cx="59" cy="50" r="2.8" fill="#1e293b"/></g><circle cx="41" cy="50" r="7" fill="none" stroke="#d97706" stroke-width="2"/><circle cx="59" cy="50" r="7" fill="none" stroke="#d97706" stroke-width="2"/><line x1="48" y1="50" x2="52" y2="50" stroke="#d97706" stroke-width="2"/>${m}</g></svg>`;
+            if (id === 'carlos') return `<svg viewBox="0 0 100 100" class="w-full h-full overflow-visible"><circle cx="50" cy="50" r="46" fill="#dbeafe"/><g class="svg-breathe"><path d="M 22 92 C 25 75, 75 75, 78 92 Z" fill="#2563eb"/><rect x="43" y="69" width="14" height="11" rx="4" fill="#e5b890"/><ellipse cx="50" cy="49" rx="21" ry="23" fill="#f5cba7"/><path d="M 29 44 C 29 23, 71 23, 71 44 C 66 34, 34 34, 29 44 Z" fill="#1e293b"/><path d="M 30 53 C 30 71, 70 71, 70 53 C 66 64, 34 64, 30 53 Z" fill="#334155" opacity="0.85"/><g class="svg-blink"><circle cx="41" cy="48" r="2.9" fill="#0f172a"/><circle cx="59" cy="48" r="2.9" fill="#0f172a"/></g>${m}</g></svg>`;
+            if (id === 'lucas') return `<svg viewBox="0 0 100 100" class="w-full h-full overflow-visible"><circle cx="50" cy="50" r="46" fill="#e0e7ff"/><g class="svg-breathe"><path d="M 26 92 C 29 77, 71 77, 74 92 Z" fill="#4f46e5"/><rect x="44" y="69" width="12" height="10" rx="4" fill="#f5cba7"/><ellipse cx="50" cy="51" rx="19" ry="21" fill="#fde0c2"/><path d="M 31 41 C 32 23, 68 23, 69 41 Z" fill="#ef4444"/><rect x="56" y="36" width="22" height="5" rx="2.5" fill="#b91c1c"/><g class="svg-blink"><circle cx="42" cy="51" r="2.8" fill="#1e293b"/><circle cx="58" cy="51" r="2.8" fill="#1e293b"/></g>${m}</g></svg>`;
+            return `<svg viewBox="0 0 100 100" class="w-full h-full overflow-visible"><circle cx="50" cy="50" r="46" fill="#fef3c7"/><g class="svg-breathe"><circle cx="25" cy="43" r="9" fill="#5c3821"/><circle cx="75" cy="43" r="9" fill="#5c3821"/><path d="M 28 92 C 30 78, 70 78, 72 92 Z" fill="#f59e0b"/><rect x="45" y="70" width="10" height="9" rx="4" fill="#f5cba7"/><ellipse cx="50" cy="52" rx="18" ry="20" fill="#fde0c2"/><path d="M 32 47 C 32 28, 68 28, 68 47 C 60 39, 40 39, 32 47 Z" fill="#5c3821"/><g class="svg-blink"><circle cx="42" cy="52" r="2.8" fill="#1e293b"/><circle cx="58" cy="52" r="2.8" fill="#1e293b"/></g>${m}</g></svg>`;
+        }
+
+        // =====================================================================
+        // 3. FASES, ESTADO GLOBAL E CARTAS PROCEDURAIS
+        // =====================================================================
+        const PHASE_CONFIGS = [
+            {
+                phase:1, monthName:'Mês 1', difficultyLabel:'Nível 1 • Planejamento Base', badgeBg:'bg-sky-900', salaryAna:2400, salaryCarlos:1800,
+                expenses:[
+                    {id:'e1',icon:'🏠',name:'Aluguel',amount:1150,type:'fixo',hint:'Contrato mensal com valor fixo.'},
+                    {id:'e2',icon:'📶',name:'Internet / Celular',amount:180,type:'fixo',hint:'Assinatura mensal fixa.'},
+                    {id:'e3',icon:'🚌',name:'Transporte',amount:320,type:'variavel',hint:'Varia conforme deslocamentos.'},
+                    {id:'e4',icon:'🛒',name:'Supermercado',amount:950,type:'variavel',hint:'Depende das escolhas de compra.'},
+                    {id:'e5',icon:'💡',name:'Conta de Luz',amount:240,type:'variavel',hint:'Oscila conforme consumo em kWh.'},
+                    {id:'e6',icon:'🚰',name:'Conta de Água',amount:110,type:'variavel',hint:'Oscila conforme volume usado.'},
+                    {id:'e7',icon:'🍕',name:'Lazer / Delivery',amount:280,type:'variavel',hint:'Depende da frequência de passeios.'},
+                    {id:'e8',icon:'📚',name:'Material Escolar',amount:170,type:'fixo',hint:'Parcela fixa mensal.'}
+                ],
+                healthEvent:{title:'Dia 18: Saúde & Genérico + CPF na Nota', itemDesc:'O tratamento custa R$ 180,00. Com genérico e CPF na Nota há 35% de desconto.', fullPrice:180, discountPct:35, ledgerDesc:'Medicamentos Maya (35% desc. + CPF na Nota)'},
+                energyConfig:{totalKwh:460, tariff:0.80, bandeira:'Bandeira Verde'}, cardMix:['beneficio','beneficio','desafio','desafio'], challengeScale:1.0, marketVolatility:'normal'
+            },
+            {
+                phase:2, monthName:'Mês 2', difficultyLabel:'Nível 2 • Reajuste (+8%)', badgeBg:'bg-indigo-950', salaryAna:2400, salaryCarlos:1800,
+                expenses:[
+                    {id:'e1',icon:'🏠',name:'Aluguel (Reajustado)',amount:1220,type:'fixo',hint:'Valor fixo mensal.'},
+                    {id:'e2',icon:'📶',name:'Internet / Celular',amount:190,type:'fixo',hint:'Assinatura fixa.'},
+                    {id:'e3',icon:'🚌',name:'Transporte',amount:350,type:'variavel',hint:'Varia no mês.'},
+                    {id:'e4',icon:'🛒',name:'Supermercado',amount:1040,type:'variavel',hint:'Alta nos alimentos.'},
+                    {id:'e5',icon:'💡',name:'Conta de Luz',amount:260,type:'variavel',hint:'Consumo em kWh.'},
+                    {id:'e6',icon:'🚰',name:'Conta de Água',amount:120,type:'variavel',hint:'Volume utilizado.'},
+                    {id:'e7',icon:'🍕',name:'Lazer / Delivery',amount:310,type:'variavel',hint:'Passeios e pedidos.'},
+                    {id:'e8',icon:'📚',name:'Curso / Material',amount:190,type:'fixo',hint:'Mensalidade fixa.'}
+                ],
+                healthEvent:{title:'Dia 18: Exame Preventivo + CPF na Nota', itemDesc:'O exame custa R$ 220,00. Com rede parceira e CPF na Nota há 30% de desconto.', fullPrice:220, discountPct:30, ledgerDesc:'Exame Lucas (30% desc. + CPF na Nota)'},
+                energyConfig:{totalKwh:480, tariff:0.85, bandeira:'Bandeira Amarela'}, cardMix:['beneficio','desafio','desafio','desafio'], challengeScale:1.15, marketVolatility:'normal'
+            },
+            {
+                phase:3, monthName:'Mês 3', difficultyLabel:'Nível 3 • Pressão Orçamentária', badgeBg:'bg-amber-900', salaryAna:2400, salaryCarlos:1800,
+                expenses:[
+                    {id:'e1',icon:'🏠',name:'Aluguel + Condomínio',amount:1280,type:'fixo',hint:'Valor fixo mensal.'},
+                    {id:'e2',icon:'📶',name:'Internet / Celular',amount:200,type:'fixo',hint:'Assinatura fixa.'},
+                    {id:'e3',icon:'🚌',name:'Transporte',amount:380,type:'variavel',hint:'Combustível mais caro.'},
+                    {id:'e4',icon:'🛒',name:'Supermercado',amount:1120,type:'variavel',hint:'Inflação nos alimentos.'},
+                    {id:'e5',icon:'💡',name:'Conta de Luz',amount:290,type:'variavel',hint:'Consumo em kWh.'},
+                    {id:'e6',icon:'🚰',name:'Conta de Água',amount:130,type:'variavel',hint:'Consumo de água.'},
+                    {id:'e7',icon:'🍕',name:'Lazer / Delivery',amount:320,type:'variavel',hint:'Gastos variáveis.'},
+                    {id:'e8',icon:'📚',name:'Curso / Material',amount:200,type:'fixo',hint:'Mensalidade fixa.'}
+                ],
+                healthEvent:{title:'Dia 18: Óculos da Ana + Nota Cidadã', itemDesc:'As lentes custam R$ 260,00. Com pesquisa e nota fiscal há 25% de desconto.', fullPrice:260, discountPct:25, ledgerDesc:'Óculos Ana (25% desc. + Nota Fiscal)'},
+                energyConfig:{totalKwh:500, tariff:0.90, bandeira:'Bandeira Vermelha P1'}, cardMix:['beneficio','desafio','desafio','desafio'], challengeScale:1.25, marketVolatility:'high'
+            },
+            {
+                phase:4, monthName:'Mês 4', difficultyLabel:'Nível 4 • Crise Final', badgeBg:'bg-rose-950', salaryAna:2400, salaryCarlos:1800,
+                expenses:[
+                    {id:'e1',icon:'🏠',name:'Aluguel + Condomínio',amount:1320,type:'fixo',hint:'Valor fixo mensal.'},
+                    {id:'e2',icon:'📶',name:'Internet / Celular',amount:210,type:'fixo',hint:'Assinatura fixa.'},
+                    {id:'e3',icon:'🚌',name:'Transporte',amount:410,type:'variavel',hint:'Deslocamentos.'},
+                    {id:'e4',icon:'🛒',name:'Supermercado',amount:1180,type:'variavel',hint:'Compras do mês.'},
+                    {id:'e5',icon:'💡',name:'Conta de Luz',amount:320,type:'variavel',hint:'Tarifa elevada.'},
+                    {id:'e6',icon:'🚰',name:'Conta de Água',amount:140,type:'variavel',hint:'Consumo de água.'},
+                    {id:'e7',icon:'🍕',name:'Lazer / Delivery',amount:310,type:'variavel',hint:'Lazer da família.'},
+                    {id:'e8',icon:'📚',name:'Curso / Material',amount:210,type:'fixo',hint:'Mensalidade fixa.'}
+                ],
+                healthEvent:{title:'Dia 18: Dentista Carlos + Nota Cidadã', itemDesc:'O procedimento custa R$ 320,00. Com desconto preventivo e nota fiscal há 25% OFF.', fullPrice:320, discountPct:25, ledgerDesc:'Dentista Carlos (25% desc. + Nota Cidadã)'},
+                energyConfig:{totalKwh:520, tariff:1.00, bandeira:'Bandeira Vermelha P2'}, cardMix:['beneficio','desafio','desafio','desafio'], challengeScale:1.40, marketVolatility:'high'
+            }
+        ];
+
+        const GameState = {
+            teamName:'', isDemoMode:false, phaseIndex:0, phaseStartBalance:200, milestoneIndex:0, dialogueIndex:0,
+            balance:200, displayedBalance:200, reserveBalance:0, wellbeing:80, totalIncome:200, totalExpenses:0,
+            fiscalPoints:0, day05Credited:false, timerSeconds:0, timerInterval:null, ledger:[], phaseHistory:[],
+            decisions:{ classifiedIds:[], lifestyleChoice:null, card1Title:null, card2Title:null, energyHabits:[], energySavedBRL:0, investmentName:null, investmentDelta:0 }
+        };
+
+        function getCurrentPhaseConfig() { return PHASE_CONFIGS[GameState.phaseIndex] || PHASE_CONFIGS[0]; }
+        function resetPhaseDecisions() {
+            GameState.day05Credited = false;
+            GameState.decisions = { classifiedIds:[], lifestyleChoice:null, card1Title:null, card2Title:null, energyHabits:[], energySavedBRL:0, investmentName:null, investmentDelta:0 };
+        }
+        function resetGameState(demoMode) {
+            GameState.isDemoMode = demoMode; GameState.phaseIndex = 0; GameState.phaseStartBalance = 200;
+            GameState.milestoneIndex = 0; GameState.dialogueIndex = 0; GameState.balance = 200; GameState.displayedBalance = 200;
+            GameState.reserveBalance = 0; GameState.wellbeing = 80; GameState.totalIncome = 200; GameState.totalExpenses = 0;
+            GameState.fiscalPoints = 0; GameState.timerSeconds = 0; GameState.phaseHistory = [];
+            GameState.ledger = [{ phase:1, day:'Dia 01', desc:'Saldo inicial acumulado', type:'in', amount:200 }];
+            resetPhaseDecisions(); ProceduralCards.usedIds.clear();
+        }
+
+        function saveGameToStorage() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...GameState, timerInterval:null, usedCardIds:Array.from(ProceduralCards.usedIds) })); } catch (_) {}
+        }
+        function checkSavedGame() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                if (!saved || typeof saved.phaseIndex !== 'number') return;
+                document.getElementById('resume-campaign-info').textContent = `${saved.teamName || 'Grupo'} • Fase ${saved.phaseIndex + 1}/4 • Saldo: ${formatBRL(saved.balance)}`;
+                document.getElementById('resume-campaign-banner').classList.remove('hidden');
+            } catch (_) {}
+        }
+        function resumeSavedGame() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+                Object.assign(GameState, saved); GameState.timerInterval = null; GameState.displayedBalance = GameState.balance;
+                ProceduralCards.usedIds = new Set(saved.usedCardIds || []);
+                document.getElementById('lobby-screen').classList.add('hidden');
+                const sh = document.getElementById('game-shell'); sh.classList.remove('hidden'); sh.classList.add('flex');
+                syncDemoToolbarVisibility(); startTimer(); loadCurrentMilestone();
+            } catch (_) {}
+        }
+        function clearSavedGame() { localStorage.removeItem(STORAGE_KEY); document.getElementById('resume-campaign-banner').classList.add('hidden'); }
+
+        function recordTransaction(day, desc, amount, isIncome) {
+            const prev = GameState.balance;
+            GameState.balance = Math.round((GameState.balance + amount) * 100) / 100;
+            GameState.ledger.push({ phase: getCurrentPhaseConfig().phase, day, desc, type: isIncome && amount >= 0 ? 'in' : 'out', amount });
+            updateHUD(); animateHUDMoneyChange(prev, GameState.balance, amount); saveGameToStorage();
+        }
+        function transferToReserve(day, amount) {
+            if (amount <= 0) return;
+            const prev = GameState.balance;
+            GameState.balance = Math.round((GameState.balance - amount) * 100) / 100;
+            GameState.reserveBalance = Math.round((GameState.reserveBalance + amount) * 100) / 100;
+            GameState.ledger.push({ phase: getCurrentPhaseConfig().phase, day, desc:'Transferência para Reserva de Emergência (15%)', type:'reserve', amount:-amount });
+            updateHUD(); animateHUDMoneyChange(prev, GameState.balance, -amount); saveGameToStorage();
+        }
+        function adjustWellbeing(d) { GameState.wellbeing = Math.max(0, Math.min(100, GameState.wellbeing + d)); updateHUD(); saveGameToStorage(); }
+        function addFiscalPoints(p) { GameState.fiscalPoints += p; updateHUD(); saveGameToStorage(); }
+
+        let balAnim = null, deltaTO = null;
+        function animateHUDMoneyChange(fromVal, toVal, delta) {
+            const balEl = document.getElementById('hud-balance'), cardEl = document.getElementById('hud-balance-card'), dEl = document.getElementById('hud-balance-delta');
+            if (!balEl) return;
+            if (balAnim) cancelAnimationFrame(balAnim);
+            const t0 = performance.now();
+            (function step(now) {
+                const pr = Math.min(1, (now - t0) / 450), cur = fromVal + (toVal - fromVal) * (1 - Math.pow(1 - pr, 3));
+                balEl.textContent = formatBRL(cur);
+                if (pr < 1) balAnim = requestAnimationFrame(step); else balEl.textContent = formatBRL(toVal);
+            })(t0);
+            if (delta && Math.abs(delta) > 0.01 && dEl && cardEl) {
+                clearTimeout(deltaTO);
+                dEl.textContent = `${delta > 0 ? '+' : '−'}${formatBRL(Math.abs(delta))}`;
+                dEl.className = `text-[9px] font-black px-1 rounded tabular-nums ${delta > 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`;
+                cardEl.classList.add('ring-2', delta > 0 ? 'ring-emerald-400' : 'ring-rose-400');
+                deltaTO = setTimeout(() => { dEl.classList.add('hidden'); cardEl.classList.remove('ring-2','ring-emerald-400','ring-rose-400'); }, 2000);
+            }
+        }
+
+        const ProceduralCards = {
+            usedIds: new Set(),
+            templates: [
+                { id:'b1', category:'beneficio', icon:'🏛️', title:'Crédito Nota Fiscal Cidadã', build(){ const base=800, delta=120; return { desc:`CPF na nota liberou 15% de retorno sobre ${formatBRL(base)}.`, delta, question:`Quanto é 15% de ${formatBRL(base)}?`, steps:`${formatBRL(base)} × 0,15 = ${formatBRL(delta)}.` }; } },
+                { id:'b2', category:'beneficio', icon:'📚', title:'Bazar de Livros Usados', build(){ const delta=100; return { desc:'Lucas e Maya venderam 4 itens usados por R$ 25,00 cada.', delta, question:'Qual o valor total arrecadado (4 × R$ 25,00)?', steps:'4 × R$ 25,00 = R$ 100,00.' }; } },
+                { id:'b3', category:'beneficio', icon:'🎂', title:'Bolos Caseiros da Ana', build(){ const delta=135; return { desc:'Ana faturou R$ 220,00 e gastou R$ 85,00 de ingredientes.', delta, question:'Qual foi o lucro líquido (Receita − Custos)?', steps:'R$ 220,00 − R$ 85,00 = R$ 135,00.' }; } },
+                { id:'b4', category:'beneficio', icon:'♻️', title:'Coleta Seletiva Premiada', build(){ const delta=100; return { desc:'Entregaram 40 kg de recicláveis a R$ 2,50 por quilo.', delta, question:'Quanto receberam pelos 40 kg?', steps:'40 × R$ 2,50 = R$ 100,00.' }; } },
+                { id:'d1', category:'desafio', icon:'🚰', title:'Vazamento na Lavanderia', build(){ const delta=-145; return { desc:'Reparo emergencial: R$ 65,00 em peças + R$ 80,00 de mão de obra.', delta, question:'Qual o custo total do reparo?', steps:'R$ 65,00 + R$ 80,00 = R$ 145,00.' }; } },
+                { id:'d2', category:'desafio', icon:'🛍️', title:'Armadilha do Parcelamento', build(){ const delta=-140; return { desc:'Um item custa 3x de R$ 55 (R$ 165) ou R$ 140 à vista. A família escolheu à vista!', delta, question:'Quanto pagaram à vista (evitando juros)?', steps:'Pagaram R$ 140,00 e economizaram R$ 25,00.' }; } },
+                { id:'d3', category:'desafio', icon:'📱', title:'Tela Trincada do Celular', build(){ const delta=-160; return { desc:'O conserto custa R$ 200,00, mas à vista com nota fiscal tem 20% de desconto.', delta, question:'Qual o valor final com 20% de desconto?', steps:'Desconto R$ 40,00. Valor pago: R$ 160,00.' }; } },
+                { id:'d4', category:'desafio', icon:'🌧️', title:'Telhas Quebradas no Temporal', build(){ const delta=-88; return { desc:'O vento quebrou 4 telhas. Cada telha nova custa R$ 22,00.', delta, question:'Qual o custo total para repor as 4 telhas?', steps:'4 × R$ 22,00 = R$ 88,00.' }; } }
+            ],
+            drawCard(cat) {
+                let pool = this.templates.filter(t => !this.usedIds.has(t.id) && (!cat || t.category === cat));
+                if (!pool.length) { this.usedIds.clear(); pool = this.templates.filter(t => !cat || t.category === cat); }
+                const tpl = pool[Math.floor(Math.random() * pool.length)];
+                this.usedIds.add(tpl.id);
+                return { templateId:tpl.id, category:tpl.category, icon:tpl.icon, title:tpl.title, ...tpl.build() };
+            },
+            drawHand() { return getCurrentPhaseConfig().cardMix.map(c => this.drawCard(c)).sort(() => Math.random() - 0.5); }
+        };
+
+        // =====================================================================
+        // 4. MOTOR DE QUESTÕES MCQ (INTEGRADO AO MODO TURMA + SEGUNDA CHANCE)
+        // =====================================================================
+        const MCQRegistry = {};
+        function handleMCQAnswer(id, idx) { if (MCQRegistry[id]) MCQRegistry[id](idx); }
+
+        function generateMoneyOptions(correctVal, extras = []) {
+            const c = Math.round(Number(correctVal) * 100) / 100;
+            const vals = [c];
+            extras.forEach(d => { const r = Math.round(Number(d)*100)/100; if (!vals.some(v => Math.abs(v-r)<0.01) && r >= 0) vals.push(r); });
+            const offs = [15,-15,25,-20,40,10,35,-10];
+            let i = 0;
+            while (vals.length < 4) { const cand = Math.max(5, Math.round((c + offs[i++ % offs.length])*100)/100); if (!vals.some(v => Math.abs(v-cand)<0.01)) vals.push(cand); }
+            return vals.slice(0,4).sort(() => Math.random() - 0.5).map((v, idx) => ({ letter:['A','B','C','D'][idx], label:formatBRL(v), isCorrect:Math.abs(v-c)<0.01 }));
+        }
+
+        function renderMCQWidget({ badge, title, contextHtml, questionText, options, stepByStepHtml, onAnswer, onComplete }) {
+            const widgetId = 'mcq_' + Math.random().toString(36).slice(2, 8);
+            let attempts = 0, resolved = false;
+
+            // Publica automaticamente nos celulares se o Modo Turma estiver ativo!
+            if (Classroom.active) {
+                setTimeout(() => Classroom.publishQuestion(widgetId, title, options), 50);
+            }
+
+            MCQRegistry[widgetId + '_continue'] = (mult) => {
+                delete MCQRegistry[widgetId]; delete MCQRegistry[widgetId + '_continue'];
+                if (Classroom.active) Classroom.clearQuestion();
+                if (typeof onComplete === 'function') onComplete(mult);
+            };
+
+            MCQRegistry[widgetId] = (optIndex) => {
+                if (resolved) return;
+                const chosen = options[optIndex], container = document.getElementById(widgetId);
+                if (!container) return;
+                const buttons = container.querySelectorAll('.mcq-opt-btn'), fb = document.getElementById(`${widgetId}-feedback`);
+                attempts++;
+
+                if (chosen.isCorrect) {
+                    resolved = true;
+                    if (Classroom.active) Classroom.gradeGroups();
+                    buttons.forEach((b, idx) => { b.disabled = true; if (options[idx].isCorrect) b.classList.add('bg-emerald-50','border-emerald-500','ring-2','ring-emerald-200'); else b.classList.add('opacity-60'); });
+                    SoundFX.play('success'); launchConfetti();
+                    if (typeof onAnswer === 'function') onAnswer(true);
+                    fb.className = 'mt-5 p-4 sm:p-5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 animate-stage-in';
+                    fb.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><h4 class="font-display font-bold text-lg text-emerald-800">✅ ${attempts===1?'Resposta Exata!':'Acertou na 2ª tentativa!'}</h4><p class="text-xs sm:text-sm font-semibold mt-1">${stepByStepHtml}</p></div><button onclick="MCQRegistry['${widgetId}_continue'](${attempts===1?1:0.5})" class="shrink-0 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md">Confirmar e Avançar ▶</button></div>`;
+                } else if (attempts === 1) {
+                    SoundFX.play('error');
+                    buttons[optIndex].disabled = true;
+                    buttons[optIndex].classList.add('bg-rose-50','border-rose-400','animate-shake','opacity-70');
+                    fb.className = 'mt-4 p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs sm:text-sm font-bold animate-stage-in';
+                    fb.innerHTML = '🤔 Quase lá! Revisem na calculadora — vocês têm mais <strong>1 tentativa</strong>!';
+                } else {
+                    resolved = true;
+                    if (Classroom.active) Classroom.gradeGroups();
+                    SoundFX.play('error');
+                    if (typeof onAnswer === 'function') onAnswer(false);
+                    buttons.forEach((b, idx) => { b.disabled = true; if (options[idx].isCorrect) b.classList.add('bg-emerald-50','border-emerald-500','ring-2','ring-emerald-200'); else if (idx===optIndex) b.classList.add('bg-rose-50','border-rose-500'); else b.classList.add('opacity-60'); });
+                    fb.className = 'mt-5 p-4 sm:p-5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 animate-stage-in';
+                    fb.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><h4 class="font-display font-bold text-lg text-amber-900">💡 Resolução passo a passo:</h4><p class="text-xs sm:text-sm font-semibold mt-1">${stepByStepHtml}</p></div><button onclick="MCQRegistry['${widgetId}_continue'](0)" class="shrink-0 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md">Entendi, Continuar ▶</button></div>`;
+                }
+            };
+
+            const classroomBar = Classroom.active ? `
+                <div class="mb-4 p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[11px] font-extrabold uppercase text-indigo-800">📡 Respostas dos Grupos pelo Celular:</span>
+                        <span class="text-[11px] font-bold text-indigo-600">Ao marcar a resposta correta abaixo, os grupos são pontuados!</span>
+                    </div>
+                    <div id="${widgetId}-live-groups" class="flex flex-wrap gap-1.5">
+                        <span class="text-xs text-slate-400 font-semibold">Sincronizando grupos...</span>
+                    </div>
+                </div>
+            ` : '';
+
+            return `
+                <div id="${widgetId}" class="bg-white rounded-3xl border border-slate-200 shadow-md p-5 sm:p-7 animate-stage-in">
+                    <div class="mb-3"><span class="inline-block text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-indigo-100 text-indigo-800">${badge}</span></div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-slate-900 mb-3">${title}</h3>
+                    <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 text-sm sm:text-base text-slate-700 font-semibold mb-4">${contextHtml}</div>
+                    ${classroomBar}
+                    <p class="font-extrabold text-slate-900 text-base sm:text-lg mb-4">❓ ${questionText}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        ${options.map((opt, idx) => `
+                            <button onclick="handleMCQAnswer('${widgetId}', ${idx})" class="mcq-opt-btn flex items-center gap-3.5 p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/70 text-left transition shadow-sm">
+                                <span class="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-display font-bold text-base flex items-center justify-center shrink-0">${opt.letter}</span>
+                                <span class="font-extrabold text-slate-800 text-base sm:text-lg tabular-nums leading-snug">${opt.label}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="${widgetId}-feedback" class="hidden"></div>
+                </div>
+            `;
+        }
+
+        // =====================================================================
+        // 5. OS 9 MARCOS COMPLETOS DA JORNADA
+        // =====================================================================
+        const MILESTONES = [
+            {
+                day:1, shortLabel:'D01', title:'Ponto de Partida',
+                dialogues:[
+                    {speaker:'ana',mood:'feliz',text:'Bem-vindos ao início de mais um mês! Vamos cuidar do saldo, da nossa Reserva de Emergência e do Bem-Estar da família.'},
+                    {speaker:'carlos',mood:'neutral',text:'Lembrem-se: fechar o mês no vermelho gera juros de 8% no mês seguinte. Planejamento é tudo!'}
+                ],
+                renderStage(container) {
+                    const cfg = getCurrentPhaseConfig();
+                    const totalBills = cfg.expenses.reduce((a,e) => a+e.amount, 0);
+                    container.innerHTML = `
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-8 text-center animate-stage-in">
+                            <span class="inline-block text-xs font-extrabold uppercase px-3.5 py-1 rounded-full bg-sky-100 text-sky-800 mb-3">📅 Fase ${cfg.phase}/4 • ${cfg.monthName} • ${cfg.difficultyLabel}</span>
+                            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Abertura do ${cfg.monthName} da Família Silva</h2>
+                            <p class="text-slate-600 font-semibold max-w-2xl mx-auto mb-6">Saldo atual: <strong>${formatBRL(GameState.balance)}</strong> • Reserva acumulada: <strong>${formatBRL(GameState.reserveBalance)}</strong> • Folga prevista do mês: <strong>${formatBRL(4200 - totalBills)}</strong>.</p>
+                            <button onclick="advanceToNextMilestone()" class="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-lg transition">Avançar para o Dia 05 (Pagamento) ▶</button>
+                        </div>`;
+                }
+            },
+            {
+                day:5, shortLabel:'D05', title:'Pagamento & Reserva',
+                dialogues:[
+                    {speaker:'ana',mood:'feliz',text:'Os salários líquidos (R$ 4.200,00) caíram na conta! Vamos aplicar a regra do "Pague-se Primeiro".'},
+                    {speaker:'carlos',mood:'pensativo',text:'Os 15% que vocês calcularem serão transferidos imediatamente para a nossa Reserva de Emergência (🛡️)!'}
+                ],
+                renderStage(container) {
+                    const cfg = getCurrentPhaseConfig(), salaries = cfg.salaryAna + cfg.salaryCarlos;
+                    if (!GameState.day05Credited) { GameState.day05Credited = true; recordTransaction('Dia 05', `Salários líquidos ${cfg.monthName}`, salaries, true); }
+                    const totalAvail = Math.round((GameState.phaseStartBalance + salaries)*100)/100, reserve15 = Math.round(salaries * 0.15);
+                    const options = [
+                        { label:`Saldo: ${formatBRL(totalAvail)} | Reserva (15%): ${formatBRL(reserve15)}`, isCorrect:true },
+                        { label:`Saldo: ${formatBRL(totalAvail)} | Reserva (15%): ${formatBRL(Math.round(salaries*0.10))}`, isCorrect:false },
+                        { label:`Saldo: ${formatBRL(totalAvail)} | Reserva (15%): ${formatBRL(Math.round(salaries*0.20))}`, isCorrect:false },
+                        { label:`Saldo: ${formatBRL(totalAvail+200)} | Reserva (15%): ${formatBRL(reserve15+30)}`, isCorrect:false }
+                    ].sort(() => Math.random()-0.5).map((o,i) => ({...o, letter:['A','B','C','D'][i]}));
+                    container.innerHTML = renderMCQWidget({
+                        badge:`🛡️ ${cfg.monthName} • Regra "Pague-se Primeiro"`, title:'Dia 05: Construindo a Reserva de Emergência (15%)',
+                        contextHtml:`<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs sm:text-sm text-emerald-950">💡 <strong>Por que separar 15% primeiro?</strong> Criar uma Reserva de Emergência protege a família contra imprevistos sem precisar recorrer a empréstimos com juros altos.</div>`,
+                        questionText:`Qual é o Saldo Disponível (${formatBRL(GameState.phaseStartBalance)} + R$ 4.200) e quanto vale 15% dos salários para transferir à Reserva?`,
+                        options, stepByStepHtml:`Saldo: <strong>${formatBRL(totalAvail)}</strong> • Reserva (15% de R$ 4.200): <strong>${formatBRL(reserve15)}</strong> transferidos para 🛡️ Reserva!`,
+                        onComplete(mult) { transferToReserve('Dia 05', reserve15); if (mult>0) addFiscalPoints(Math.round(15*mult)); advanceToNextMilestone(); }
+                    });
+                }
+            },
+            {
+                day:10, shortLabel:'D10', title:'Contas & Padrão de Vida',
+                dialogues:[
+                    {speaker:'carlos',mood:'pensativo',text:'Chegaram as 8 despesas do mês. Primeiro, classifiquem o que é Gasto Fixo e o que é Gasto Variável.'},
+                    {speaker:'ana',mood:'neutral',text:'Depois, vocês escolherão como ajustar os gastos variáveis equilibrando economia e Bem-Estar!'}
+                ],
+                renderStage(container) {
+                    const cfg = getCurrentPhaseConfig(), expenses = cfg.expenses;
+                    const totalBills = expenses.reduce((a,e)=>a+e.amount,0), fixos = expenses.filter(e=>e.type==='fixo').reduce((a,e)=>a+e.amount,0);
+                    function renderList() {
+                        const done = GameState.decisions.classifiedIds || [];
+                        if (done.length === expenses.length) { if (!GameState.decisions.lifestyleChoice) renderLifestyle(); else renderMath(); return; }
+                        container.innerHTML = `
+                            <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-5 sm:p-7 animate-stage-in">
+                                <span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-sky-100 text-sky-800">🗂️ Etapa 1 de 3 • Classificação (${done.length}/8)</span>
+                                <h3 class="text-xl font-bold text-slate-900 my-2">Organize as Despesas do ${cfg.monthName}</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                                    ${expenses.map(item => {
+                                        const ok = done.includes(item.id);
+                                        return `<div id="card-${item.id}" class="rounded-2xl border-2 p-3.5 ${ok?(item.type==='fixo'?'bg-indigo-50 border-indigo-300':'bg-amber-50 border-amber-300'):'bg-slate-50 border-slate-200'}">
+                                            <div class="flex justify-between mb-1"><span class="text-2xl">${item.icon}</span><span class="font-black text-sm">${formatBRL(item.amount)}</span></div>
+                                            <h4 class="font-extrabold text-sm mb-2">${item.name}</h4>
+                                            ${ok ? `<div class="text-xs font-extrabold py-1 rounded-xl text-center ${item.type==='fixo'?'bg-indigo-600 text-white':'bg-amber-500 text-slate-950'}">✓ ${item.type==='fixo'?'Fixo':'Variável'}</div>`
+                                                 : `<div class="grid grid-cols-2 gap-1.5"><button onclick="classifyExpense('${item.id}','fixo')" class="py-1.5 rounded-xl bg-white hover:bg-indigo-600 hover:text-white border text-xs font-extrabold">Fixo</button><button onclick="classifyExpense('${item.id}','variavel')" class="py-1.5 rounded-xl bg-white hover:bg-amber-500 border text-xs font-extrabold">Variável</button></div>`}
+                                        </div>`;
+                                    }).join('')}
+                                </div>
+                            </div>`;
+                    }
+                    window.classifyExpense = (id, t) => {
+                        const item = expenses.find(e=>e.id===id);
+                        if (!item || GameState.decisions.classifiedIds.includes(id)) return;
+                        if (item.type === t) { SoundFX.play('click'); GameState.decisions.classifiedIds.push(id); recordTransaction('Dia 10', item.name, -item.amount, false); renderList(); }
+                        else { SoundFX.play('error'); showToast(`Ops! ${item.name}: ${item.hint}`, 'warning'); }
+                    };
+                    function renderLifestyle() {
+                        container.innerHTML = `
+                            <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 animate-stage-in">
+                                <span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-teal-100 text-teal-800">⚖️ Etapa 2 de 3 • Consumo Consciente</span>
+                                <h3 class="text-xl font-bold text-slate-900 my-2">Como ajustar os Gastos Variáveis neste mês?</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                    <button onclick="chooseLifestyle('manter',0,5,'Manteve padrão')" class="text-left p-4 rounded-2xl bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200"><span class="text-2xl">🍕</span><h4 class="font-bold mt-1">Manter Padrão</h4><p class="text-xs text-slate-600 mt-1">Economia R$ 0 • +5% Bem-Estar</p></button>
+                                    <button onclick="chooseLifestyle('equilibrado',150,5,'Plano Equilibrado')" class="text-left p-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-300"><span class="text-2xl">🥗</span><h4 class="font-bold mt-1">Plano Equilibrado</h4><p class="text-xs text-emerald-800 mt-1">+R$ 150,00 • +5% Bem-Estar</p></button>
+                                    <button onclick="chooseLifestyle('radical',280,-15,'Corte Radical')" class="text-left p-4 rounded-2xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-300"><span class="text-2xl">✂️</span><h4 class="font-bold mt-1">Corte Radical</h4><p class="text-xs text-amber-900 mt-1">+R$ 280,00 • −15% Bem-Estar</p></button>
+                                </div>
+                            </div>`;
+                    }
+                    window.chooseLifestyle = (id, saved, wb, lbl) => {
+                        SoundFX.play('click'); GameState.decisions.lifestyleChoice = lbl;
+                        if (saved > 0) recordTransaction('Dia 10', `Ajuste: ${lbl}`, saved, true);
+                        adjustWellbeing(wb); if (id === 'equilibrado') addFiscalPoints(15); renderMath();
+                    };
+                    function renderMath() {
+                        const pct = (Math.round((fixos/totalBills)*1000)/10).toFixed(1).replace('.',',');
+                        const options = [
+                            { label:`Fixos: ${pct}% | Saldo: ${formatBRL(GameState.balance)}`, isCorrect:true },
+                            { label:`Fixos: 49,5% | Saldo: ${formatBRL(GameState.balance-150)}`, isCorrect:false },
+                            { label:`Fixos: 31,2% | Saldo: ${formatBRL(GameState.balance+150)}`, isCorrect:false },
+                            { label:`Fixos: 55,0% | Saldo: ${formatBRL(GameState.balance)}`, isCorrect:false }
+                        ].sort(()=>Math.random()-0.5).map((o,i)=>({...o, letter:['A','B','C','D'][i]}));
+                        container.innerHTML = renderMCQWidget({
+                            badge:`📊 Etapa 3 de 3 • Equilíbrio Orçamentário`, title:'O Peso dos Gastos Fixos',
+                            contextHtml:`Gastos Fixos: <strong>${formatBRL(fixos)}</strong> • Total das 8 contas: <strong>${formatBRL(totalBills)}</strong>.`,
+                            questionText:`Quanto os Gastos Fixos representam sobre o Total de Despesas e qual o saldo atual?`,
+                            options, stepByStepHtml:`${fixos} ÷ ${totalBills} ≈ <strong>${pct}%</strong> • Saldo atual: <strong>${formatBRL(GameState.balance)}</strong>.`,
+                            onComplete(mult) { if (mult>0) addFiscalPoints(Math.round(20*mult)); advanceToNextMilestone(); }
+                        });
+                    }
+                    renderList();
+                }
+            },
+            {
+                day:14, shortLabel:'D14', title:'Carta Surpresa 1',
+                dialogues:[{speaker:'lucas',mood:'surpreso',text:'Chegou a primeira rodada de Cartas Surpresa! Atenção às oportunidades e às armadilhas de consumo.'}],
+                renderStage(container) { renderCardDeckStage(container, 14, 'card1Title'); }
+            },
+            {
+                day:18, shortLabel:'D18', title:'Saúde & Nota Cidadã',
+                dialogues:[
+                    {speaker:'maya',mood:'doente',text:'Surgiu um imprevisto de saúde na família este mês!'},
+                    {speaker:'ana',mood:'preocupado',text:'Pesquisando preços e pedindo CPF na Nota Fiscal Cidadã, cuidamos da saúde sem desequilibrar o orçamento!'}
+                ],
+                renderStage(container) {
+                    const cfg = getCurrentPhaseConfig(), ev = cfg.healthEvent;
+                    const disc = Math.round(ev.fullPrice*(ev.discountPct/100)*100)/100, finalP = Math.round((ev.fullPrice-disc)*100)/100;
+                    container.innerHTML = renderMCQWidget({
+                        badge:`🏥 ${cfg.monthName} • Consumo Inteligente & Cidadania`, title:ev.title, contextHtml:`<p>${ev.itemDesc}</p>`,
+                        questionText:`Aplicando ${ev.discountPct}% de desconto sobre ${formatBRL(ev.fullPrice)}, quanto a família vai pagar?`,
+                        options:generateMoneyOptions(finalP, [disc, ev.fullPrice-20, finalP+25]),
+                        stepByStepHtml:`Desconto: ${formatBRL(disc)} • Valor pago: <strong>${formatBRL(finalP)}</strong>.`,
+                        onComplete(mult) { recordTransaction('Dia 18', ev.ledgerDesc, -finalP, false); addFiscalPoints(mult>0?Math.round(25*mult):10); adjustWellbeing(5); advanceToNextMilestone(); }
+                    });
+                }
+            },
+            {
+                day:23, shortLabel:'D23', title:'Carta Surpresa 2',
+                dialogues:[{speaker:'carlos',mood:'pensativo',text:'Reta final do mês! Vamos sortear a segunda Carta Surpresa para testar nosso orçamento.'}],
+                renderStage(container) { renderCardDeckStage(container, 23, 'card2Title'); }
+            },
+            {
+                day:27, shortLabel:'D27', title:'Consumo Consciente (kWh)',
+                dialogues:[{speaker:'ana',mood:'feliz',text:'Escolham 3 mudanças de hábitos em kWh e calculem a economia em Reais na conta de luz!'}],
+                renderStage(container) {
+                    const cfg = getCurrentPhaseConfig(), tariff = cfg.energyConfig.tariff;
+                    const habits = [
+                        {id:'h1',icon:'🚿',title:'Banhos de até 8 min',kwhSaved:50}, {id:'h2',icon:'❄️',title:'Ar-condicionado 23°C',kwhSaved:35},
+                        {id:'h3',icon:'🔌',title:'Tirar stand-by',kwhSaved:20}, {id:'h4',icon:'💡',title:'Lâmpadas LED',kwhSaved:15}, {id:'h5',icon:'🧊',title:'Vedação da geladeira',kwhSaved:18}
+                    ];
+                    const sel = new Set();
+                    function drawH() {
+                        const tot = habits.filter(h=>sel.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0);
+                        container.innerHTML = `
+                            <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 animate-stage-in">
+                                <span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">🌱 ${cfg.energyConfig.bandeira} • ${formatBRL(tariff)}/kWh</span>
+                                <h3 class="text-xl font-bold text-slate-900 my-2">Escolha 3 Hábitos (${sel.size}/3)</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 my-4">
+                                    ${habits.map(h => `<button onclick="toggleH('${h.id}')" class="text-left p-3.5 rounded-2xl border-2 ${sel.has(h.id)?'bg-emerald-50 border-emerald-500':'bg-white border-slate-200'}"><div class="flex justify-between"><span class="text-xl">${h.icon}</span><span class="text-xs font-black">−${h.kwhSaved} kWh</span></div><h4 class="font-extrabold text-sm mt-1">${h.title}</h4></button>`).join('')}
+                                </div>
+                                <button onclick="confirmH()" ${sel.size!==3?'disabled':''} class="px-6 py-3 rounded-xl font-extrabold text-sm ${sel.size===3?'bg-emerald-600 text-white':'bg-slate-300 text-slate-500'}">Calcular Economia (${tot} kWh) ▶</button>
+                            </div>`;
+                    }
+                    window.toggleH = (id) => { SoundFX.play('click'); if (sel.has(id)) sel.delete(id); else if (sel.size<3) sel.add(id); drawH(); };
+                    window.confirmH = () => {
+                        const kwh = habits.filter(h=>sel.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0), saved = Math.round(kwh*tariff*100)/100;
+                        container.innerHTML = renderMCQWidget({
+                            badge:`⚡ Sustentabilidade`, title:'Calcule a Economia em Reais',
+                            contextHtml:`Corte total: <strong>${kwh} kWh</strong> • Tarifa: <strong>${formatBRL(tariff)}/kWh</strong>.`,
+                            questionText:`Multiplicando ${kwh} kWh por ${formatBRL(tariff)}, quanto a família economizou?`,
+                            options:generateMoneyOptions(saved, [saved+15, Math.max(10,saved-12), kwh]),
+                            stepByStepHtml:`${kwh} × ${formatBRL(tariff)} = <strong>${formatBRL(saved)}</strong>!`,
+                            onComplete(mult) { recordTransaction('Dia 27', `Economia Energia (-${kwh} kWh)`, saved, true); addFiscalPoints(mult>0?Math.round(20*mult):10); advanceToNextMilestone(); }
+                        });
+                    };
+                    drawH();
+                }
+            },
+            {
+                day:28, shortLabel:'D28', title:'Investimento / Dívida',
+                dialogues:[{speaker:'lucas',mood:'pensativo',text:'Dia 28! Se fechamos no azul, vamos investir com taxas realistas. Se estamos no vermelho, vamos renegociar a dívida!'}],
+                renderStage(container) {
+                    if (GameState.balance <= 0) {
+                        const debt = Math.abs(GameState.balance), disc = Math.round(debt*0.2*100)/100, newD = Math.round((debt-disc)*100)/100;
+                        container.innerHTML = renderMCQWidget({
+                            badge:'🚨 Renegociação de Dívida', title:'Saindo do Vermelho (-20% de encargos)',
+                            contextHtml:`Dívida atual: <strong>${formatBRL(debt)}</strong>. O banco ofereceu 20% de abatimento.`,
+                            questionText:`Qual será o valor restante da dívida após 20% de desconto?`,
+                            options:generateMoneyOptions(newD, [disc, debt, debt+20]),
+                            stepByStepHtml:`Desconto: ${formatBRL(disc)} • Dívida renegociada: <strong>${formatBRL(newD)}</strong>.`,
+                            onComplete(mult) { if (disc>0) recordTransaction('Dia 28','Abatimento Renegociação (20%)',disc,true); if (mult>0) addFiscalPoints(Math.round(15*mult)); advanceToNextMilestone(); }
+                        });
+                        return;
+                    }
+                    const cap = GameState.balance;
+                    const mods = [
+                        {id:'poup',icon:'🏦',name:'Poupança (+0,5% a.m.)',rate:0.005},
+                        {id:'selic',icon:'📜',name:'Tesouro Selic (+1% a.m.)',rate:0.01},
+                        {id:'fiis',icon:'🏢',name:'Fundos Imobiliários (+2% ou -1%)',rate:Math.random()>=0.4?0.02:-0.01},
+                        {id:'bolsa',icon:'📈',name:'Bolsa de Valores (+5% ou -3%)',rate:Math.random()>=0.45?0.05:-0.03}
+                    ];
+                    window.pickInv = (idx) => {
+                        const m = mods[idx], delta = Math.round(cap*m.rate*100)/100, upd = Math.round((cap+delta)*100)/100;
+                        const pct = `${m.rate>0?'+':''}${(m.rate*100).toFixed(1).replace('.0','').replace('.',',')}%`;
+                        container.innerHTML = renderMCQWidget({
+                            badge:`💹 Investimentos (${pct})`, title:`Resultado: ${m.name}`,
+                            contextHtml:`Capital aplicado: <strong>${formatBRL(cap)}</strong> • Variação do mês: <strong>${pct}</strong>.`,
+                            questionText:`Qual é o novo valor atualizado após ${pct}?`,
+                            options:generateMoneyOptions(upd, [cap-delta, cap+Math.abs(delta)*2, cap*1.03]),
+                            stepByStepHtml:`Variação: ${delta>=0?'+':'−'}${formatBRL(Math.abs(delta))} • Novo saldo: <strong>${formatBRL(upd)}</strong>.`,
+                            onComplete(mult) { recordTransaction('Dia 28', `${m.name} (${pct})`, delta, delta>=0); if (mult>0) addFiscalPoints(Math.round(20*mult)); advanceToNextMilestone(); }
+                        });
+                    };
+                    container.innerHTML = `
+                        <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 animate-stage-in">
+                            <h2 class="text-xl font-bold text-slate-900 mb-4">Onde investir ${formatBRL(cap)}?</h2>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                ${mods.map((m,i) => `<button onclick="pickInv(${i})" class="text-left p-4 rounded-2xl bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 transition"><span class="text-2xl">${m.icon}</span><h3 class="font-bold mt-1">${m.name}</h3></button>`).join('')}
+                            </div>
+                        </div>`;
+                }
+            },
+            {
+                day:30, shortLabel:'D30', title:'Fechamento do Mês',
+                dialogues:[{speaker:'ana',mood:'feliz',text:'Fechamos o mês! Confiram a evolução do saldo, da reserva de emergência e do bem-estar da família.'}],
+                renderStage(container) {
+                    const cfg = getCurrentPhaseConfig(), isLast = GameState.phaseIndex >= PHASE_CONFIGS.length - 1;
+                    if (GameState.balance < 0 && GameState.reserveBalance > 0) {
+                        const cov = Math.min(Math.abs(GameState.balance), GameState.reserveBalance);
+                        GameState.reserveBalance = Math.round((GameState.reserveBalance - cov)*100)/100;
+                        recordTransaction('Dia 30','🛡️ Resgate automático da Reserva de Emergência',cov,true);
+                    }
+                    if (!GameState.phaseHistory.some(p => p.phase === cfg.phase)) {
+                        GameState.phaseHistory.push({ phase:cfg.phase, endBalance:GameState.balance, reserveBalance:GameState.reserveBalance });
+                        saveGameToStorage();
+                    }
+                    if (isLast) stopTimer();
+                    const phaseLedger = GameState.ledger.filter(l => l.phase === cfg.phase);
+                    container.innerHTML = `
+                        <div class="space-y-5 animate-stage-in">
+                            <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 text-center">
+                                <h2 class="text-2xl font-bold text-slate-900 mb-2">🏁 Fechamento ${cfg.monthName} (Fase ${cfg.phase}/4)</h2>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-5">
+                                    <div class="bg-indigo-50 p-3 rounded-2xl"><span class="text-[11px] font-bold block">Saldo Conta</span><strong class="text-lg">${formatBRL(GameState.balance)}</strong></div>
+                                    <div class="bg-emerald-50 p-3 rounded-2xl"><span class="text-[11px] font-bold block">🛡️ Reserva</span><strong class="text-lg">${formatBRL(GameState.reserveBalance)}</strong></div>
+                                    <div class="bg-sky-50 p-3 rounded-2xl"><span class="text-[11px] font-bold block">😊 Bem-Estar</span><strong class="text-lg">${GameState.wellbeing}%</strong></div>
+                                    <div class="bg-amber-50 p-3 rounded-2xl"><span class="text-[11px] font-bold block">🏛️ Cidadania</span><strong class="text-lg">${GameState.fiscalPoints} pts</strong></div>
+                                </div>
+                                <div class="print-hidden flex flex-wrap justify-center gap-3">
+                                    ${!isLast ? `<button onclick="startNextPhase()" class="px-7 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold">Avançar para Fase ${cfg.phase+1} ▶</button>` : ''}
+                                    <button onclick="window.print()" class="px-5 py-3.5 rounded-2xl bg-slate-800 text-white font-extrabold text-sm">🖨️ Imprimir / PDF</button>
+                                    <button onclick="returnToLobby()" class="px-5 py-3.5 rounded-2xl bg-slate-100 text-slate-800 font-extrabold text-sm">🔄 Lobby</button>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-5">
+                                <h3 class="font-bold text-lg mb-3">🧾 Extrato Contábil — ${cfg.monthName}</h3>
+                                <div class="divide-y divide-slate-100 max-h-60 overflow-y-auto text-sm">
+                                    ${phaseLedger.map(l => `<div class="py-2 flex justify-between"><span><strong class="text-indigo-600 mr-1">${l.day}</strong> ${l.desc}</span><span class="font-black ${l.amount>=0?'text-emerald-600':'text-rose-600'}">${l.amount>=0?'+':''}${formatBRL(l.amount)}</span></div>`).join('')}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+            }
+        ];
+
+        function renderCardDeckStage(container, dayNum, key) {
+            let hand = ProceduralCards.drawHand(), chosen = null;
+            function draw() {
+                container.innerHTML = `
+                    <div class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 animate-stage-in">
+                        <h2 class="text-xl font-bold text-slate-900 mb-4">🃏 Dia ${dayNum}: Escolha 1 Carta Surpresa</h2>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                            ${hand.map((c,i) => `
+                                <div onclick="pickCard_${dayNum}(${i})" class="card-3d perspective-1000 h-56 cursor-pointer ${chosen!==null?'flipped':''}">
+                                    <div class="card-3d-inner shadow-md rounded-2xl">
+                                        <div class="card-face bg-gradient-to-br from-indigo-600 to-blue-800 text-white p-4 flex flex-col items-center justify-center"><span class="text-3xl mb-2">🎴</span><span class="font-bold">Carta #${i+1}</span></div>
+                                        <div class="card-face card-back p-3.5 flex flex-col justify-between border-4 ${c.category==='beneficio'?'bg-emerald-50 border-emerald-400':'bg-rose-50 border-rose-400'} ${chosen===i?'ring-4 ring-indigo-500':''}">
+                                            <div class="flex justify-between"><span class="text-[10px] font-extrabold uppercase">${c.category}</span><span class="text-xl">${c.icon}</span></div>
+                                            <div class="text-center"><h4 class="font-bold text-sm">${c.title}</h4><p class="text-[11px] mt-1">${c.desc}</p></div>
+                                            <div class="text-center text-xs font-extrabold">${chosen===i?'🧮 Calcule abaixo!':'—'}</div>
+                                        </div>
+                                    </div>
+                                </div>`).join('')}
+                        </div>
+                        <div id="card-slot-${dayNum}" class="mt-6"></div>
+                    </div>`;
+            }
+            window[`pickCard_${dayNum}`] = (idx) => {
+                if (chosen !== null) return;
+                chosen = idx; SoundFX.play('flip'); draw();
+                const c = hand[idx];
+                document.getElementById(`card-slot-${dayNum}`).innerHTML = renderMCQWidget({
+                    badge:`🃏 Carta #${idx+1}`, title:c.title, contextHtml:`<p>${c.desc}</p>`, questionText:c.question,
+                    options:generateMoneyOptions(Math.abs(c.delta)), stepByStepHtml:c.steps,
+                    onComplete(mult) { recordTransaction(`Dia ${dayNum}`, c.title, c.delta, c.delta>=0); if (mult>0) addFiscalPoints(Math.round(15*mult)); advanceToNextMilestone(); }
+                });
+            };
+            draw();
+        }
+
+        function startNextPhase() {
+            GameState.phaseIndex++; GameState.milestoneIndex = 0; GameState.dialogueIndex = 0; resetPhaseDecisions();
+            if (GameState.balance < 0) {
+                const juros = Math.round(Math.abs(GameState.balance)*0.08*100)/100;
+                recordTransaction('Dia 01','⚠️ Juros de 8% sobre saldo negativo', -juros, false);
+            }
+            GameState.phaseStartBalance = GameState.balance;
+            loadCurrentMilestone();
+        }
+
+        // =====================================================================
+        // 6. VISUAL NOVEL, HUD, DEMO, CALCULADORA E INICIALIZAÇÃO
+        // =====================================================================
+        let typingTimer = null, isTyping = false, fullText = '';
+        function renderDialogueBar() {
+            const ms = MILESTONES[GameState.milestoneIndex], d = ms.dialogues[GameState.dialogueIndex] || ms.dialogues[ms.dialogues.length-1], ch = FAMILY[d.speaker];
+            const box = document.getElementById('vn-avatar-box');
+            box.className = `w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-100 border-2 border-indigo-200 p-1 flex items-center justify-center mood-${d.mood}`;
+            box.innerHTML = `<div class="avatar-stage w-full h-full is-speaking">${buildCharacterSVG(d.speaker, d.mood)}</div>`;
+            document.getElementById('vn-family-strip').innerHTML = Object.values(FAMILY).filter(f=>f.id!==d.speaker).map(f=>`<div class="w-6 h-6 rounded-lg bg-slate-100 border p-0.5">${buildCharacterSVG(f.id,'neutral')}</div>`).join('');
+            document.getElementById('vn-speaker-name').textContent = ch.name;
+            document.getElementById('vn-speaker-role').textContent = ch.role;
+            document.getElementById('vn-speaker-role').className = `text-[11px] font-extrabold px-2.5 py-0.5 rounded-full ${ch.badgeClass}`;
+            document.getElementById('vn-dialogue-counter').textContent = `${GameState.dialogueIndex+1} / ${ms.dialogues.length}`;
+
+            clearInterval(typingTimer);
+            const el = document.getElementById('vn-dialogue-text'); el.textContent = ''; fullText = d.text; isTyping = true;
+            let i = 0;
+            typingTimer = setInterval(() => { if (i < fullText.length) { el.textContent += fullText.charAt(i++); } else finishTyping(); }, 18);
+            updateDialogueBtns();
+        }
+        function finishTyping() { clearInterval(typingTimer); isTyping = false; document.getElementById('vn-dialogue-text').textContent = fullText; const s = document.querySelector('#vn-avatar-box .avatar-stage'); if (s) s.classList.remove('is-speaking'); updateDialogueBtns(); }
+        function updateDialogueBtns() {
+            const hasMore = GameState.dialogueIndex < MILESTONES[GameState.milestoneIndex].dialogues.length - 1;
+            const btn = document.getElementById('vn-next-btn'), hint = document.getElementById('vn-stage-hint');
+            if (isTyping || hasMore) { btn.classList.remove('hidden'); hint.classList.add('hidden'); } else { btn.classList.add('hidden'); hint.classList.remove('hidden'); }
+        }
+        function advanceDialogue() { SoundFX.play('click'); if (isTyping) return finishTyping(); if (GameState.dialogueIndex < MILESTONES[GameState.milestoneIndex].dialogues.length - 1) { GameState.dialogueIndex++; renderDialogueBar(); } }
+
+        function updateHUD() {
+            const ms = MILESTONES[GameState.milestoneIndex], cfg = getCurrentPhaseConfig();
+            document.getElementById('hud-phase-badge').className = `${cfg.badgeBg} text-white px-3 py-1.5 rounded-xl flex flex-col justify-center`;
+            document.getElementById('hud-phase-label').textContent = `Fase ${cfg.phase}/4 • ${cfg.monthName}`;
+            document.getElementById('hud-difficulty-label').textContent = cfg.difficultyLabel;
+            document.getElementById('hud-day').textContent = String(ms.day).padStart(2,'0');
+            document.getElementById('hud-milestone-name').textContent = ms.title;
+            document.getElementById('hud-balance').textContent = formatBRL(GameState.balance);
+            document.getElementById('hud-reserve').textContent = formatBRL(GameState.reserveBalance);
+            document.getElementById('hud-wellbeing').textContent = `${GameState.wellbeing}%`;
+            document.getElementById('hud-fiscal').textContent = `${GameState.fiscalPoints} pts`;
+            document.getElementById('hud-progress-dots').innerHTML = MILESTONES.map((m,i)=>`<span class="${i<GameState.milestoneIndex?'w-2 bg-emerald-500':(i===GameState.milestoneIndex?'w-4 bg-indigo-600':'w-2 bg-slate-300')} h-2 rounded-full"></span>`).join('');
+            document.getElementById('demo-day-shortcuts').innerHTML = MILESTONES.map((m,i)=>`<button onclick="demoJump(${i})" class="px-2 py-1 rounded-lg font-extrabold ${i===GameState.milestoneIndex?'bg-white text-purple-900':'bg-purple-800 text-purple-100'}">${m.shortLabel}</button>`).join('');
+        }
+
+        function loadCurrentMilestone() { GameState.dialogueIndex = 0; updateHUD(); renderDialogueBar(); const sc = document.getElementById('stage-container'); sc.innerHTML = ''; MILESTONES[GameState.milestoneIndex].renderStage(sc); }
+        function advanceToNextMilestone() { if (GameState.milestoneIndex < MILESTONES.length - 1) { GameState.milestoneIndex++; saveGameToStorage(); loadCurrentMilestone(); } }
+        function syncDemoToolbarVisibility() { document.getElementById('demo-presenter-bar').classList.toggle('hidden', !GameState.isDemoMode); }
+        function toggleDemoMode() { GameState.isDemoMode = !GameState.isDemoMode; syncDemoToolbarVisibility(); }
+        function demoSimulateNext() { advanceToNextMilestone(); }
+        function demoJump(i) { GameState.milestoneIndex = i; loadCurrentMilestone(); }
+        function demoJumpToEnd() { demoJump(MILESTONES.length - 1); }
+
+        function startTimer() { stopTimer(); GameState.timerInterval = setInterval(() => { GameState.timerSeconds++; document.getElementById('hud-timer').textContent = `${String(Math.floor(GameState.timerSeconds/60)).padStart(2,'0')}:${String(GameState.timerSeconds%60).padStart(2,'0')}`; }, 1000); }
+        function stopTimer() { if (GameState.timerInterval) { clearInterval(GameState.timerInterval); GameState.timerInterval = null; } }
+
+        function toggleCalculator() { SoundFX.play('click'); document.getElementById('calculator-modal').classList.toggle('hidden'); }
+        let calcBuf = '';
+        function calcPress(k) {
+            SoundFX.play('click'); if (k===',') k='.';
+            if (k==='C') calcBuf=''; else if (k==='BACK') calcBuf=calcBuf.slice(0,-1);
+            else if (k==='=') { try { calcBuf = String(Math.round(Function(`"use strict";return (${calcBuf})`)()*100)/100); } catch { calcBuf=''; } }
+            else calcBuf += k;
+            document.getElementById('calc-screen').value = (calcBuf||'0').replace(/\./g,',');
+        }
+        function toggleRulesModal(s) { document.getElementById('rules-modal').classList.toggle('hidden', !s); }
+
+        function renderLobbyFamily() {
+            document.getElementById('lobby-family-grid').innerHTML = Object.values(FAMILY).map(m => `
+                <button type="button" onclick="document.getElementById('lobby-char-quote').textContent='${m.name.split(' ')[0]}: \\'${m.quote}\\''"
+                    class="bg-white hover:bg-indigo-50 border border-slate-200 rounded-2xl p-3 flex flex-col items-center text-center shadow-sm mood-feliz">
+                    <div class="avatar-stage w-16 h-16 mb-1.5">${buildCharacterSVG(m.id,'feliz')}</div>
+                    <span class="font-display font-bold text-xs text-slate-900">${m.name.split(' ')[0]}</span>
+                </button>`).join('');
+        }
+
+        function startGame(demoMode, classroomMode) {
+            SoundFX.play('success');
+            resetGameState(demoMode);
+            GameState.teamName = document.getElementById('team-name-input').value.trim();
+            document.getElementById('lobby-screen').classList.add('hidden');
+            const sh = document.getElementById('game-shell'); sh.classList.remove('hidden'); sh.classList.add('flex');
+            syncDemoToolbarVisibility(); startTimer(); loadCurrentMilestone();
+            if (classroomMode) Classroom.createRoom();
+        }
+
+        function returnToLobby() { stopTimer(); document.getElementById('game-shell').classList.add('hidden'); document.getElementById('game-shell').classList.remove('flex'); document.getElementById('lobby-screen').classList.remove('hidden'); checkSavedGame(); }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const p = new URLSearchParams(window.location.search);
+            if (p.get('modo') === 'aluno' && p.get('sala')) {
+                initStudentMode(p.get('sala'));
             } else {
-                document.getElementById('host-app').classList.remove('hidden');
+                document.getElementById('lobby-screen').classList.remove('hidden');
+                renderLobbyFamily();
+                checkSavedGame();
             }
         });
     </script>
