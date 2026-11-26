@@ -25,10 +25,6 @@
         @keyframes slideUpFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         .animate-stage-in { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        @keyframes gentleShake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
-        .animate-shake { animation: gentleShake 0.4s ease-in-out; }
-
-        /* Animações dos Personagens SVG */
         @keyframes charBreathe { 0%,100%{transform:translateY(0) scaleY(1)} 50%{transform:translateY(-2px) scaleY(1.015)} }
         @keyframes charBlink { 0%,46%,54%,100%{transform:scaleY(1)} 50%{transform:scaleY(0.08)} }
         @keyframes mouthTalk { 0%,100%{transform:scaleY(0.85)} 25%{transform:scaleY(1.85)} 50%{transform:scaleY(0.6)} 75%{transform:scaleY(1.5)} }
@@ -47,30 +43,32 @@
         .mood-pensativo .avatar-stage { animation: moodPensativo 2.8s ease-in-out infinite; }
         .mood-doente .avatar-stage { animation: moodDoente 0.25s linear infinite; }
 
-        /* Cartas 3D */
-        .perspective-1000 { perspective: 1000px; }
-        .card-3d-inner { position: relative; width: 100%; height: 100%; transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; }
-        .card-3d.flipped .card-3d-inner { transform: rotateY(180deg); }
-        .card-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 1.25rem; }
-        .card-back { transform: rotateY(180deg); }
-
         #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
 
+        /* Impressão limpa exclusiva para o Dashboard de Resultados (PDF) */
         @media print {
-            body { background: white !important; }
-            #game-shell { height: auto !important; overflow: visible !important; display: block !important; }
-            #stage-scroll-area { overflow: visible !important; padding: 0 !important; }
-            .print-hidden { display: none !important; }
+            body { background: #ffffff !important; }
+            #lobby-screen, #game-shell, #student-app, #qr-modal, #calculator-modal, #confetti-canvas, #toast-container, .no-print {
+                display: none !important;
+            }
+            #results-dashboard {
+                display: block !important;
+                position: static !important;
+                overflow: visible !important;
+                background: #ffffff !important;
+                padding: 0 !important;
+            }
+            .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-indigo-200 selection:text-indigo-900">
 
-    <canvas id="confetti-canvas" class="print-hidden"></canvas>
-    <div id="toast-container" class="print-hidden fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+    <canvas id="confetti-canvas" class="no-print"></canvas>
+    <div id="toast-container" class="no-print fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
 
     <!-- ===================================================================== -->
-    <!-- CONTROLE DO ALUNO (CELULAR VIA QR CODE — COM AUTONOMIA TOTAL)         -->
+    <!-- CONTROLE DO ALUNO (CELULAR VIA QR CODE)                               -->
     <!-- ===================================================================== -->
     <section id="student-app" class="hidden flex-1 flex flex-col max-w-md w-full mx-auto p-3.5 justify-between">
         <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5 flex items-center justify-between">
@@ -81,21 +79,21 @@
             <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Conectado"></span>
         </header>
 
-        <!-- Tela de Entrada -->
+        <!-- Tela de Entrada com Validação de Nome Único -->
         <div id="stu-join-view" class="my-auto bg-white rounded-3xl shadow-lg border border-slate-200 p-6 animate-stage-in">
             <h2 class="font-display text-2xl font-bold text-slate-900 mb-2">Qual é o nome do seu grupo?</h2>
-            <p class="text-sm text-slate-600 font-semibold mb-4">1 celular por grupo (o tesoureiro). Vocês terão controle próprio sobre cartas, hábitos e investimentos!</p>
+            <p class="text-sm text-slate-600 font-semibold mb-4">1 celular por grupo (o tesoureiro). Não é permitido repetir nomes já cadastrados na sala.</p>
             <input id="stu-name-input" type="text" maxlength="28" placeholder="Ex.: Equipe Economia Criativa"
-                class="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-base mb-4">
-            <button onclick="studentJoinRoom()"
-                class="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-md transition">
+                class="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-base mb-2">
+            <p id="stu-join-error" class="hidden text-xs font-extrabold text-rose-600 mb-3"></p>
+            <button id="stu-join-btn" onclick="studentJoinRoom()"
+                class="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white font-extrabold text-base shadow-md transition mt-2">
                 Entrar na Sala ▶
             </button>
         </div>
 
         <!-- Painel Financeiro do Grupo + Área Interativa -->
         <div id="stu-controller-view" class="hidden flex-1 flex flex-col gap-3 my-3">
-            <!-- 4 Indicadores Individuais do Grupo -->
             <div class="grid grid-cols-2 gap-2">
                 <div class="bg-white rounded-2xl p-2.5 border border-indigo-200 shadow-sm">
                     <span class="text-[10px] font-extrabold uppercase text-indigo-500 block">💰 Saldo Conta</span>
@@ -115,7 +113,6 @@
                 </div>
             </div>
 
-            <!-- Área Dinâmica (Perguntas, Cartas, Hábitos, Investimentos) -->
             <div id="stu-action-area" class="flex-1 bg-white rounded-3xl shadow-md border border-slate-200 p-4 overflow-y-auto flex flex-col justify-center">
                 <div class="text-center text-slate-500 font-bold">
                     <span class="text-4xl block mb-2">👀</span>
@@ -150,22 +147,6 @@
                 </p>
             </div>
 
-            <!-- Retomar Campanha -->
-            <div id="resume-campaign-banner" class="hidden mt-6 bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">💾</span>
-                    <div>
-                        <h3 class="font-extrabold text-emerald-950 text-sm sm:text-base">Campanha em andamento encontrada!</h3>
-                        <p id="resume-campaign-info" class="text-xs font-semibold text-emerald-800"></p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <button onclick="resumeSavedGame()" class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm transition">▶ Continuar</button>
-                    <button onclick="clearSavedGame()" class="px-3 py-2.5 rounded-xl bg-white border border-emerald-200 text-slate-600 font-extrabold text-xs">🗑️</button>
-                </div>
-            </div>
-
-            <!-- Vitrine da Família Silva -->
             <div class="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center bg-slate-50/90 border border-slate-200/80 rounded-2xl p-5 sm:p-6">
                 <div class="lg:col-span-7">
                     <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -184,7 +165,6 @@
                 </div>
             </div>
 
-            <!-- Botões Principais -->
             <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
                 <button onclick="startGame(false, true)"
                     class="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-base shadow-lg transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
@@ -206,7 +186,7 @@
     <!-- TELA PRINCIPAL DO JOGO (3 ZONAS: HUD + PALCO + VISUAL NOVEL)          -->
     <!-- ===================================================================== -->
     <div id="game-shell" class="hidden h-screen flex-col overflow-hidden">
-        <header class="print-hidden bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm shrink-0 z-30">
+        <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm shrink-0 z-30">
             <div class="max-w-7xl mx-auto px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                     <div id="hud-phase-badge" class="bg-slate-900 text-white px-3 py-1.5 rounded-xl shadow-sm flex flex-col justify-center">
@@ -224,33 +204,21 @@
                 </div>
 
                 <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center">
-                    <div id="hud-balance-card" class="relative bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
+                    <div class="bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
                         <span class="text-sm">💰</span>
-                        <div>
-                            <span class="block text-[9px] font-extrabold uppercase text-indigo-500 leading-none">Saldo Telão</span>
-                            <span id="hud-balance" class="text-xs sm:text-sm font-black text-indigo-900 tabular-nums">R$ 200,00</span>
-                        </div>
+                        <div><span class="block text-[9px] font-extrabold uppercase text-indigo-500 leading-none">Saldo Telão</span><span id="hud-balance" class="text-xs sm:text-sm font-black text-indigo-900 tabular-nums">R$ 200,00</span></div>
                     </div>
                     <div class="bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
                         <span class="text-sm">🛡️</span>
-                        <div>
-                            <span class="block text-[9px] font-extrabold uppercase text-emerald-600 leading-none">Reserva</span>
-                            <span id="hud-reserve" class="text-xs sm:text-sm font-black text-emerald-800 tabular-nums">R$ 0,00</span>
-                        </div>
+                        <div><span class="block text-[9px] font-extrabold uppercase text-emerald-600 leading-none">Reserva</span><span id="hud-reserve" class="text-xs sm:text-sm font-black text-emerald-800 tabular-nums">R$ 0,00</span></div>
                     </div>
                     <div class="bg-sky-50 border border-sky-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
-                        <span id="hud-wellbeing-icon" class="text-sm">😊</span>
-                        <div>
-                            <span class="block text-[9px] font-extrabold uppercase text-sky-600 leading-none">Bem-Estar</span>
-                            <span id="hud-wellbeing" class="text-xs sm:text-sm font-black text-sky-900 tabular-nums">80%</span>
-                        </div>
+                        <span class="text-sm">😊</span>
+                        <div><span class="block text-[9px] font-extrabold uppercase text-sky-600 leading-none">Bem-Estar</span><span id="hud-wellbeing" class="text-xs sm:text-sm font-black text-sky-900 tabular-nums">80%</span></div>
                     </div>
                     <div class="bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1.5">
                         <span class="text-sm">🏛️</span>
-                        <div>
-                            <span class="block text-[9px] font-extrabold uppercase text-amber-600 leading-none">Cidadania</span>
-                            <span id="hud-fiscal" class="text-xs sm:text-sm font-black text-amber-800 tabular-nums">0 pts</span>
-                        </div>
+                        <div><span class="block text-[9px] font-extrabold uppercase text-amber-600 leading-none">Cidadania</span><span id="hud-fiscal" class="text-xs sm:text-sm font-black text-amber-800 tabular-nums">0 pts</span></div>
                     </div>
                 </div>
 
@@ -258,7 +226,7 @@
                     <button id="btn-hud-qr" onclick="openQRModal()" class="hidden px-2.5 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-900 text-xs font-extrabold flex items-center gap-1" title="QR Code da Turma">
                         <span>📱</span><span id="hud-group-count">0</span>
                     </button>
-                    <button id="btn-hud-rank" onclick="openLeaderboardModal()" class="hidden px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-extrabold" title="Placar Comparativo">🏆</button>
+                    <button id="btn-hud-rank" onclick="openResultsDashboard()" class="hidden px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-extrabold" title="Ver Dashboard de Resultados">🏆 Resultado</button>
                     <div class="hidden sm:flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-1.5 rounded-xl text-xs font-extrabold text-slate-700 tabular-nums">
                         <span>⏱️</span><span id="hud-timer">00:00</span>
                     </div>
@@ -284,8 +252,7 @@
             <div id="stage-container" class="max-w-5xl mx-auto pb-6"></div>
         </main>
 
-        <!-- ZONA 3: DIÁLOGO VISUAL NOVEL ANIMADO -->
-        <footer class="print-hidden bg-white/95 backdrop-blur-md border-t-2 border-indigo-100 shadow-[0_-6px_25px_rgba(15,23,42,0.06)] shrink-0 z-20">
+        <footer class="bg-white/95 backdrop-blur-md border-t-2 border-indigo-100 shadow-[0_-6px_25px_rgba(15,23,42,0.06)] shrink-0 z-20">
             <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-4 sm:gap-5">
                 <div class="flex flex-col items-center shrink-0">
                     <div id="vn-avatar-box" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-100 border-2 border-indigo-200 p-1 shadow-sm flex items-center justify-center overflow-visible"></div>
@@ -311,8 +278,66 @@
         </footer>
     </div>
 
+    <!-- ===================================================================== -->
+    <!-- DASHBOARD DE RESULTADO FINAL + HISTÓRICO POR EQUIPE (IMPRIMÍVEL PDF)  -->
+    <!-- ===================================================================== -->
+    <section id="results-dashboard" class="hidden fixed inset-0 bg-slate-100 z-50 overflow-y-auto p-4 sm:p-8">
+        <div class="max-w-5xl mx-auto space-y-6 pb-10">
+            <!-- Barra Superior do Dashboard -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-600">📊 Relatório Final • Educação Financeira Consciente</span>
+                    <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900 mt-0.5">Dashboard de Resultados da Turma</h2>
+                    <p id="dash-meta-info" class="text-xs font-bold text-slate-500 mt-1"></p>
+                </div>
+                <div class="no-print flex flex-wrap items-center gap-2">
+                    <button onclick="window.print()" class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md transition">
+                        🖨️ Salvar em PDF
+                    </button>
+                    <button onclick="exportClassCSV()" class="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-sm transition">
+                        📥 CSV
+                    </button>
+                    <button onclick="closeResultsDashboard()" class="px-4 py-3 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-sm transition">
+                        ✖ Fechar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Destaque da Equipe Campeã -->
+            <div id="dash-champion-box"></div>
+
+            <!-- Tabela Comparativa Geral -->
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-6 break-inside-avoid">
+                <h3 class="font-display text-lg font-bold text-slate-900 mb-1">🏅 Classificação Geral (Índice de Equilíbrio)</h3>
+                <p class="text-xs font-semibold text-slate-500 mb-4">Fórmula: (Saldo + Reserva) ÷ 10 + (Bem-Estar × 3) + (Cidadania × 2)</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b-2 border-slate-200 text-xs uppercase text-slate-500">
+                                <th class="py-2 px-3">#</th>
+                                <th class="py-2 px-3">Equipe</th>
+                                <th class="py-2 px-3 text-right">💰 Saldo</th>
+                                <th class="py-2 px-3 text-right">🛡️ Reserva</th>
+                                <th class="py-2 px-3 text-center">😊 Bem-Estar</th>
+                                <th class="py-2 px-3 text-center">🏛️ Cidadania</th>
+                                <th class="py-2 px-3 text-right">🏆 Índice Final</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-ranking-tbody" class="divide-y divide-slate-100 font-bold"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Histórico Detalhado de Escolhas de Cada Equipe -->
+            <div>
+                <h3 class="font-display text-xl font-bold text-slate-900 mb-3">📜 Histórico de Escolhas por Equipe</h3>
+                <div id="dash-histories-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+    </section>
+
     <!-- MODAL: QR CODE -->
-    <div id="qr-modal" class="print-hidden hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div id="qr-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center shadow-2xl animate-stage-in">
             <h2 class="font-display text-2xl font-bold text-slate-900 mb-1">📱 Escaneie para Entrar na Sala</h2>
             <p class="text-sm text-slate-600 font-semibold mb-4">1 celular por grupo • Sala: <strong id="qr-room-code" class="text-indigo-600">---</strong></p>
@@ -328,36 +353,8 @@
         </div>
     </div>
 
-    <!-- MODAL: PLACAR COMPARATIVO DA TURMA -->
-    <div id="leaderboard-modal" class="print-hidden hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl max-h-[85vh] flex flex-col animate-stage-in">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="font-display text-2xl font-bold text-slate-900">🏆 Placar Comparativo dos Grupos</h2>
-                <div class="flex items-center gap-2">
-                    <button onclick="exportClassCSV()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold">📥 Exportar CSV</button>
-                    <button onclick="document.getElementById('leaderboard-modal').classList.add('hidden')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">&times;</button>
-                </div>
-            </div>
-            <div class="overflow-x-auto flex-1">
-                <table class="w-full text-left border-collapse text-sm">
-                    <thead>
-                        <tr class="border-b-2 border-slate-200 text-xs uppercase text-slate-500">
-                            <th class="py-2 px-3">Grupo</th>
-                            <th class="py-2 px-3 text-right">💰 Saldo</th>
-                            <th class="py-2 px-3 text-right">🛡️ Reserva</th>
-                            <th class="py-2 px-3 text-center">😊 Bem-Estar</th>
-                            <th class="py-2 px-3 text-center">🏛️ Cidadania</th>
-                            <th class="py-2 px-3 text-center">✅ Acertos</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboard-tbody" class="divide-y divide-slate-100 font-bold"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
     <!-- CALCULADORA -->
-    <div id="calculator-modal" class="print-hidden hidden fixed bottom-28 right-4 sm:right-8 w-72 bg-white rounded-2xl shadow-2xl border-2 border-slate-200 z-40 overflow-hidden animate-stage-in">
+    <div id="calculator-modal" class="hidden fixed bottom-28 right-4 sm:right-8 w-72 bg-white rounded-2xl shadow-2xl border-2 border-slate-200 z-40 overflow-hidden animate-stage-in">
         <div class="bg-slate-800 text-white px-4 py-2.5 flex items-center justify-between">
             <span class="text-xs font-extrabold uppercase">🧮 Calculadora</span>
             <button onclick="toggleCalculator()" class="text-slate-300 hover:text-white font-bold text-lg leading-none">&times;</button>
@@ -390,7 +387,7 @@
 
     <script>
         // =====================================================================
-        // 1. FIREBASE REALTIME DATABASE (CREDENCIAIS PREENCHIDAS)
+        // 1. FIREBASE REALTIME DATABASE
         // =====================================================================
         const FIREBASE_CONFIG = {
             apiKey: "AIzaSyBpToRSI6Uh6PQE8DEOVRsbIo01mOSu4fo",
@@ -407,15 +404,18 @@
 
         function formatBRL(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
+        function calcEquilibriumScore(g) {
+            const pat = (Number(g.saldo) || 0) + (Number(g.reserva) || 0);
+            const wb = Number(g.bemEstar ?? 80);
+            const cid = Number(g.cidadania) || 0;
+            return Math.round((pat / 10) + (wb * 3) + (cid * 2));
+        }
+
         // =====================================================================
-        // 2. MOTOR MULTIPLAYER DE SALA DE AULA (AUTONOMIA NO CELULAR)
+        // 2. MOTOR MULTIPLAYER DE SALA DE AULA + DASHBOARD FINAL
         // =====================================================================
         const Classroom = {
-            active: false,
-            roomCode: null,
-            groups: {},
-            currentActivityId: null,
-            liveMonitorId: null,
+            active: false, roomCode: null, groups: {}, currentActivityId: null, liveMonitorId: null,
 
             createRoom() {
                 if (!db) return showToast('Firebase indisponível.', 'warning');
@@ -435,11 +435,18 @@
                 if (!this.active || !db) return;
                 this.currentActivityId = 'act_' + Date.now();
                 this.liveMonitorId = monitorElementId;
+                const phase = getCurrentPhaseConfig().phase;
+                const dayNum = MILESTONES[GameState.milestoneIndex].day;
                 const updates = {};
                 Object.keys(this.groups).forEach(gid => {
                     updates[`salas/${this.roomCode}/grupos/${gid}/statusAtual`] = 'pendente';
                 });
-                updates[`salas/${this.roomCode}/atividadeAtual`] = { id: this.currentActivityId, ...activityObj };
+                updates[`salas/${this.roomCode}/atividadeAtual`] = {
+                    id: this.currentActivityId,
+                    phase,
+                    dayLabel: `Dia ${String(dayNum).padStart(2, '0')}`,
+                    ...activityObj
+                };
                 db.ref().update(updates);
             },
 
@@ -494,55 +501,173 @@
             document.getElementById('qr-modal').classList.remove('hidden');
         }
 
-        function openLeaderboardModal() {
-            const list = Object.values(Classroom.groups).sort((a, b) => ((b.saldo||0)+(b.reserva||0)) - ((a.saldo||0)+(a.reserva||0)));
-            document.getElementById('leaderboard-tbody').innerHTML = list.length
-                ? list.map(g => `<tr>
+        function openResultsDashboard() {
+            const list = Classroom.active
+                ? Object.values(Classroom.groups).map(g => ({ ...g, score: calcEquilibriumScore(g) }))
+                : [{
+                    nome: GameState.teamName || 'Equipe Principal',
+                    saldo: GameState.balance,
+                    reserva: GameState.reserveBalance,
+                    bemEstar: GameState.wellbeing,
+                    cidadania: GameState.fiscalPoints,
+                    acertos: 0,
+                    historico: GameState.ledger.reduce((acc, item, idx) => { acc[idx] = { fase: item.phase, dia: item.day, acao: item.desc, detalhe: formatBRL(item.amount) }; return acc; }, {}),
+                    score: calcEquilibriumScore({ saldo: GameState.balance, reserva: GameState.reserveBalance, bemEstar: GameState.wellbeing, cidadania: GameState.fiscalPoints })
+                }];
+
+            list.sort((a, b) => b.score - a.score);
+
+            const nowStr = new Date().toLocaleString('pt-BR');
+            document.getElementById('dash-meta-info').textContent = `Sala: ${Classroom.roomCode || 'Individual'} • Gerado em ${nowStr} • ${list.length} equipe(s)`;
+
+            // Cartão da Equipe Campeã
+            const champBox = document.getElementById('dash-champion-box');
+            if (list.length > 0) {
+                const c = list[0];
+                champBox.innerHTML = `
+                    <div class="bg-gradient-to-r from-amber-50 via-yellow-50 to-emerald-50 border-2 border-amber-300 rounded-3xl p-6 shadow-md flex flex-col sm:flex-row items-center justify-between gap-5 break-inside-avoid">
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-400 text-white text-4xl flex items-center justify-center shadow-md shrink-0">🏆</div>
+                            <div>
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-amber-800">Equipe Campeã • Maior Equilíbrio Financeiro</span>
+                                <h3 class="font-display text-2xl sm:text-3xl font-bold text-slate-900">${c.nome}</h3>
+                                <p class="text-sm font-bold text-slate-600 mt-0.5">Índice Final: <strong class="text-indigo-700">${c.score} pts</strong> • Patrimônio Total: <strong class="text-emerald-700">${formatBRL((c.saldo||0)+(c.reserva||0))}</strong></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2.5 text-center w-full sm:w-auto">
+                            <div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Saldo</span><strong class="text-sm">${formatBRL(c.saldo)}</strong></div>
+                            <div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Reserva</span><strong class="text-sm text-emerald-700">${formatBRL(c.reserva)}</strong></div>
+                            <div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Bem-Estar</span><strong class="text-sm text-sky-700">${c.bemEstar ?? 80}%</strong></div>
+                        </div>
+                    </div>`;
+            } else {
+                champBox.innerHTML = '<div class="bg-white rounded-3xl p-6 text-center text-slate-500 font-bold">Nenhuma equipe registrada ainda.</div>';
+            }
+
+            // Tabela de Ranking
+            document.getElementById('dash-ranking-tbody').innerHTML = list.map((g, i) => `
+                <tr class="${i === 0 ? 'bg-amber-50/50' : ''}">
+                    <td class="py-2.5 px-3 font-black">${i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `${i + 1}º`))}</td>
                     <td class="py-2.5 px-3 text-slate-900">${g.nome}</td>
                     <td class="py-2.5 px-3 text-right tabular-nums ${(g.saldo||0)<0?'text-rose-600':'text-indigo-900'}">${formatBRL(g.saldo)}</td>
                     <td class="py-2.5 px-3 text-right tabular-nums text-emerald-700">${formatBRL(g.reserva)}</td>
                     <td class="py-2.5 px-3 text-center">${g.bemEstar ?? 80}%</td>
                     <td class="py-2.5 px-3 text-center text-amber-700">${g.cidadania || 0} pts</td>
-                    <td class="py-2.5 px-3 text-center">${g.acertos || 0}</td>
-                </tr>`).join('')
-                : '<tr><td colspan="6" class="py-6 text-center text-slate-400">Nenhum grupo conectado.</td></tr>';
-            document.getElementById('leaderboard-modal').classList.remove('hidden');
+                    <td class="py-2.5 px-3 text-right font-black text-indigo-700">${g.score} pts</td>
+                </tr>`).join('');
+
+            // Histórico Detalhado de Escolhas de Cada Equipe
+            document.getElementById('dash-histories-grid').innerHTML = list.map((g, i) => {
+                const histArr = g.historico ? Object.values(g.historico) : [];
+                return `
+                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 break-inside-avoid">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                            <div>
+                                <span class="text-xs font-extrabold uppercase text-indigo-600">${i + 1}º Lugar • ${g.score} pts</span>
+                                <h4 class="font-display text-lg font-bold text-slate-900">${g.nome}</h4>
+                            </div>
+                            <span class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700">✅ ${g.acertos || 0} acertos</span>
+                        </div>
+                        ${histArr.length ? `
+                            <ul class="space-y-2 text-xs">
+                                ${histArr.map(h => `
+                                    <li class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-start justify-between gap-2">
+                                        <div>
+                                            <span class="font-extrabold text-indigo-600">Mês ${h.fase || 1} • ${h.dia || ''}</span>
+                                            <strong class="block text-slate-800">${h.acao}</strong>
+                                        </div>
+                                        <span class="font-bold text-slate-600 text-right shrink-0">${h.detalhe || ''}</span>
+                                    </li>`).join('')}
+                            </ul>
+                        ` : '<p class="text-xs text-slate-400 font-semibold italic">Nenhuma escolha registrada ainda.</p>'}
+                    </div>`;
+            }).join('');
+
+            document.getElementById('results-dashboard').classList.remove('hidden');
+            launchConfetti();
+        }
+
+        function closeResultsDashboard() {
+            document.getElementById('results-dashboard').classList.add('hidden');
         }
 
         function exportClassCSV() {
-            const rows = [['Grupo','Saldo','Reserva','Bem-Estar (%)','Cidadania (pts)','Acertos']];
-            Object.values(Classroom.groups).forEach(g => rows.push([g.nome, g.saldo, g.reserva, g.bemEstar, g.cidadania, g.acertos||0]));
+            const rows = [['Equipe','Saldo','Reserva','Bem-Estar (%)','Cidadania (pts)','Acertos','Indice Final']];
+            Object.values(Classroom.groups).forEach(g => rows.push([g.nome, g.saldo, g.reserva, g.bemEstar, g.cidadania, g.acertos||0, calcEquilibriumScore(g)]));
             const link = document.createElement('a');
             link.href = URL.createObjectURL(new Blob([rows.map(r=>r.join(';')).join('\n')], { type:'text/csv;charset=utf-8;' }));
-            link.download = `relatorio_${Classroom.roomCode}.csv`;
+            link.download = `relatorio_${Classroom.roomCode || 'turma'}.csv`;
             link.click();
         }
 
         // =====================================================================
-        // 3. CONTROLE DO ALUNO NO CELULAR (CARTAS, HÁBITOS, INVESTIMENTOS, MCQ)
+        // 3. CONTROLE DO ALUNO (CORRIGIDO: SEM DUPLICATAS + NOME ÚNICO + HISTÓRICO)
         // =====================================================================
         let stuRoom = null, stuGid = null, stuGroupData = null, stuLastActId = null;
+        let stuCurPhase = 1, stuCurDay = 'Dia 01';
 
         function initStudentMode(roomCode) {
             stuRoom = roomCode;
             document.getElementById('student-app').classList.remove('hidden');
             document.getElementById('stu-room-badge').textContent = `Sala: ${roomCode}`;
             const saved = localStorage.getItem(`stu_gid_${roomCode}`);
-            if (saved) { stuGid = saved; connectStudentListeners(); }
+            if (saved) {
+                db.ref(`salas/${roomCode}/grupos/${saved}`).once('value').then(snap => {
+                    if (snap.exists()) { stuGid = saved; connectStudentListeners(); }
+                    else localStorage.removeItem(`stu_gid_${roomCode}`);
+                });
+            }
         }
 
-        function studentJoinRoom() {
+        async function studentJoinRoom() {
+            const btn = document.getElementById('stu-join-btn');
+            const errEl = document.getElementById('stu-join-error');
             const name = document.getElementById('stu-name-input').value.trim();
-            if (!name) return alert('Digite o nome do seu grupo!');
-            stuGid = 'grp_' + Math.random().toString(36).slice(2, 8);
-            localStorage.setItem(`stu_gid_${stuRoom}`, stuGid);
-            db.ref(`salas/${stuRoom}/grupos/${stuGid}`).set({
-                nome: name, saldo: 200, reserva: 0, bemEstar: 80, cidadania: 0, acertos: 0, statusAtual: 'pendente'
-            }).then(() => connectStudentListeners());
+
+            errEl.classList.add('hidden');
+            if (!name) {
+                errEl.textContent = '⚠️ Digite o nome do seu grupo!';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            if (btn.disabled) return; // Evita clique duplo!
+
+            btn.disabled = true;
+            btn.textContent = 'Verificando nome...';
+
+            try {
+                const snap = await db.ref(`salas/${stuRoom}/grupos`).once('value');
+                const existing = snap.val() || {};
+                const normalized = name.toLowerCase();
+                const alreadyExists = Object.values(existing).some(g => (g.nome || '').trim().toLowerCase() === normalized);
+
+                if (alreadyExists) {
+                    errEl.textContent = `⚠️ O nome "${name}" já está em uso nesta sala! Escolha outro nome.`;
+                    errEl.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.textContent = 'Entrar na Sala ▶';
+                    return;
+                }
+
+                stuGid = 'grp_' + Math.random().toString(36).slice(2, 8);
+                localStorage.setItem(`stu_gid_${stuRoom}`, stuGid);
+
+                await db.ref(`salas/${stuRoom}/grupos/${stuGid}`).set({
+                    nome: name, saldo: 200, reserva: 0, bemEstar: 80, cidadania: 0, acertos: 0, statusAtual: 'pendente'
+                });
+                connectStudentListeners();
+            } catch (e) {
+                errEl.textContent = 'Erro de conexão. Tente novamente.';
+                errEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Entrar na Sala ▶';
+            }
         }
 
-        function updateStudentGroup(patch) {
-            db.ref(`salas/${stuRoom}/grupos/${stuGid}`).update(patch);
+        function updateStudentGroup(patch) { db.ref(`salas/${stuRoom}/grupos/${stuGid}`).update(patch); }
+        function logStudentHistory(acao, detalhe) {
+            if (!db || !stuRoom || !stuGid) return;
+            db.ref(`salas/${stuRoom}/grupos/${stuGid}/historico`).push({ fase: stuCurPhase, dia: stuCurDay, acao, detalhe });
         }
 
         function connectStudentListeners() {
@@ -572,6 +697,8 @@
                 }
                 if (act.id === stuLastActId) return;
                 stuLastActId = act.id;
+                stuCurPhase = act.phase || 1;
+                stuCurDay = act.dayLabel || '';
                 renderStudentActivity(act);
             });
         }
@@ -579,68 +706,46 @@
         function renderStudentActivity(act) {
             const area = document.getElementById('stu-action-area');
 
-            // 1. QUESTÃO MCQ COM ENUNCIADO COMPLETO
             if (act.type === 'mcq') {
+                window._stuMcqTitle = act.title;
                 area.innerHTML = `
                     <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 mb-2">${act.badge || 'Desafio'}</span>
                     <h3 class="font-display font-bold text-base text-slate-900 mb-1.5">${act.title}</h3>
                     <p class="text-xs text-slate-600 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-200 mb-2.5">${act.context || ''}</p>
                     <p class="text-sm font-extrabold text-slate-900 mb-3">❓ ${act.question}</p>
                     <div class="grid grid-cols-1 gap-2">
-                        ${act.options.map(o => `<button onclick="stuAnswerMCQ('${o.key}', '${act.correctKey}', ${act.points || 15})" class="w-full p-3 rounded-xl bg-indigo-50 hover:bg-indigo-600 hover:text-white border-2 border-indigo-200 font-extrabold text-left text-xs sm:text-sm transition active:scale-95"><strong>${o.key})</strong> ${o.label}</button>`).join('')}
+                        ${act.options.map(o => `<button onclick="stuAnswerMCQ('${o.key}','${act.correctKey}',${act.points || 15})" class="w-full p-3 rounded-xl bg-indigo-50 hover:bg-indigo-600 hover:text-white border-2 border-indigo-200 font-extrabold text-left text-xs sm:text-sm transition"><strong>${o.key})</strong> ${o.label}</button>`).join('')}
                     </div>`;
-            }
-
-            // 2. ESCOLHA DE PADRÃO DE VIDA (DIA 10)
-            else if (act.type === 'lifestyle') {
+            } else if (act.type === 'lifestyle') {
                 area.innerHTML = `
                     <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 mb-2">⚖️ Dia 10 • Escolha do Grupo</span>
                     <h3 class="font-display font-bold text-lg text-slate-900 mb-2">Como ajustar os Gastos Variáveis?</h3>
-                    <p class="text-xs text-slate-600 font-semibold mb-3">A escolha afeta diretamente o saldo e o bem-estar do seu grupo:</p>
                     <div class="space-y-2.5">
-                        <button onclick="stuPickLifestyle('Manter Padrão', 0, 5, 0)" class="w-full text-left p-3.5 rounded-2xl bg-slate-50 border-2 border-slate-200 hover:border-indigo-400"><strong>🍕 Manter Padrão</strong><span class="block text-xs text-slate-600">Economia R$ 0 • +5% Bem-Estar</span></button>
-                        <button onclick="stuPickLifestyle('Plano Equilibrado', 150, 5, 15)" class="w-full text-left p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 hover:border-emerald-500"><strong>🥗 Plano Equilibrado</strong><span class="block text-xs text-emerald-800">+R$ 150,00 • +5% Bem-Estar • +15 pts</span></button>
-                        <button onclick="stuPickLifestyle('Corte Radical', 280, -15, 0)" class="w-full text-left p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300 hover:border-amber-500"><strong>✂️ Corte Radical</strong><span class="block text-xs text-amber-900">+R$ 280,00 • −15% Bem-Estar</span></button>
+                        <button onclick="stuPickLifestyle('Manter Padrão',0,5,0)" class="w-full text-left p-3.5 rounded-2xl bg-slate-50 border-2 border-slate-200"><strong>🍕 Manter Padrão</strong><span class="block text-xs text-slate-600">Economia R$ 0 • +5% Bem-Estar</span></button>
+                        <button onclick="stuPickLifestyle('Plano Equilibrado',150,5,15)" class="w-full text-left p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300"><strong>🥗 Plano Equilibrado</strong><span class="block text-xs text-emerald-800">+R$ 150,00 • +5% Bem-Estar • +15 pts</span></button>
+                        <button onclick="stuPickLifestyle('Corte Radical',280,-15,0)" class="w-full text-left p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300"><strong>✂️ Corte Radical</strong><span class="block text-xs text-amber-900">+R$ 280,00 • −15% Bem-Estar</span></button>
                     </div>`;
-            }
-
-            // 3. CARTAS SURPRESA NO CELULAR (DIAS 14 E 23)
-            else if (act.type === 'card_pick') {
+            } else if (act.type === 'card_pick') {
                 window._stuHand = act.cards;
                 area.innerHTML = `
                     <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 mb-2">🃏 Dia ${act.day} • Escolha sua Carta</span>
-                    <h3 class="font-display font-bold text-lg text-slate-900 mb-3">Toque em 1 Carta Surpresa para o seu grupo:</h3>
+                    <h3 class="font-display font-bold text-lg text-slate-900 mb-3">Toque em 1 Carta Surpresa:</h3>
                     <div class="grid grid-cols-2 gap-2.5">
-                        ${act.cards.map((c, i) => `
-                            <button onclick="stuFlipCard(${i})" class="h-28 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white font-display font-bold flex flex-col items-center justify-center shadow-md active:scale-95 transition">
-                                <span class="text-3xl mb-1">🎴</span><span>Carta #${i + 1}</span>
-                            </button>`).join('')}
+                        ${act.cards.map((c, i) => `<button onclick="stuFlipCard(${i})" class="h-28 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white font-display font-bold flex flex-col items-center justify-center shadow-md"><span class="text-3xl mb-1">🎴</span><span>Carta #${i + 1}</span></button>`).join('')}
                     </div>`;
-            }
-
-            // 4. HÁBITOS DE ENERGIA NO CELULAR (DIA 27)
-            else if (act.type === 'energy_habits') {
-                window._stuHabits = act.habits;
-                window._stuTariff = act.tariff;
-                window._stuSelHabits = new Set();
+            } else if (act.type === 'energy_habits') {
+                window._stuHabits = act.habits; window._stuTariff = act.tariff; window._stuSelHabits = new Set();
                 renderStuHabits();
-            }
-
-            // 5. INVESTIMENTO OU RENEGOCIAÇÃO NO CELULAR (DIA 28)
-            else if (act.type === 'investment') {
+            } else if (act.type === 'investment') {
                 const bal = stuGroupData ? stuGroupData.saldo : 200;
                 if (bal <= 0) {
                     const debt = Math.abs(bal), disc = Math.round(debt * 0.2 * 100) / 100, newD = Math.round((debt - disc) * 100) / 100;
-                    const opts = generateMoneyOptions(newD, [disc, debt, debt + 20]);
-                    const correct = opts.find(o => o.isCorrect).letter;
-                    window._stuPostDelta = disc;
+                    const opts = generateMoneyOptions(newD, [disc, debt, debt + 20]), correct = opts.find(o => o.isCorrect).letter;
                     area.innerHTML = `
-                        <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 mb-2">🚨 Dia 28 • Renegociação de Dívida</span>
-                        <h3 class="font-display font-bold text-base text-slate-900 mb-2">Seu grupo está negativo em ${formatBRL(debt)}</h3>
-                        <p class="text-xs text-slate-600 bg-rose-50 p-2.5 rounded-xl mb-3">O banco ofereceu <strong>20% de abatimento</strong>. Qual será o valor restante da dívida?</p>
-                        <div class="grid grid-cols-1 gap-2">
-                            ${opts.map(o => `<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${disc},15,'Renegociou dívida')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}
-                        </div>`;
+                        <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 mb-2">🚨 Dia 28 • Renegociação</span>
+                        <h3 class="font-display font-bold text-base mb-2">Saldo negativo em ${formatBRL(debt)}</h3>
+                        <p class="text-xs bg-rose-50 p-2.5 rounded-xl mb-3">Com <strong>20% de abatimento</strong>, qual o valor restante da dívida?</p>
+                        <div class="grid grid-cols-1 gap-2">${opts.map(o => `<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${disc},15,'Renegociação de Dívida')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
                 } else {
                     window._stuInvMods = [
                         { icon:'🏦', name:'Poupança (+0,5% a.m.)', rate:0.005 },
@@ -649,168 +754,86 @@
                         { icon:'📈', name:'Bolsa (+5% ou -3%)', rate:Math.random()>=0.45?0.05:-0.03 }
                     ];
                     area.innerHTML = `
-                        <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 mb-2">📈 Dia 28 • Investimento do Grupo</span>
-                        <h3 class="font-display font-bold text-base text-slate-900 mb-2">Onde investir seus ${formatBRL(bal)}?</h3>
-                        <div class="grid grid-cols-1 gap-2">
-                            ${window._stuInvMods.map((m, i) => `<button onclick="stuPickInv(${i})" class="w-full text-left p-3.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 font-extrabold text-sm">${m.icon} ${m.name}</button>`).join('')}
-                        </div>`;
+                        <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 mb-2">📈 Dia 28 • Investimento</span>
+                        <h3 class="font-display font-bold text-base mb-2">Onde investir seus ${formatBRL(bal)}?</h3>
+                        <div class="grid grid-cols-1 gap-2">${window._stuInvMods.map((m, i) => `<button onclick="stuPickInv(${i})" class="w-full text-left p-3.5 rounded-2xl bg-slate-50 border-2 border-slate-200 font-extrabold text-sm">${m.icon} ${m.name}</button>`).join('')}</div>`;
                 }
             }
         }
 
         function stuAnswerMCQ(chosen, correct, pts) {
             const ok = chosen === correct;
-            updateStudentGroup({
-                cidadania: (stuGroupData.cidadania || 0) + (ok ? pts : 0),
-                acertos: (stuGroupData.acertos || 0) + (ok ? 1 : 0),
-                statusAtual: ok ? `Acertou (${chosen})` : `Marcou ${chosen}`
-            });
-            document.getElementById('stu-action-area').innerHTML = `
-                <div class="text-center py-5">
-                    <span class="text-5xl block mb-2">${ok ? '✅' : '💡'}</span>
-                    <h3 class="font-display font-bold text-lg ${ok ? 'text-emerald-700' : 'text-amber-700'}">${ok ? `Acertou! (+${pts} pts)` : `Você marcou ${chosen}`}</h3>
-                    <p class="text-xs text-slate-500 font-semibold mt-1">Acompanhe a explicação no telão!</p>
-                </div>`;
+            updateStudentGroup({ cidadania: (stuGroupData.cidadania||0)+(ok?pts:0), acertos: (stuGroupData.acertos||0)+(ok?1:0), statusAtual: ok?`Acertou (${chosen})`:`Marcou ${chosen}` });
+            logStudentHistory(window._stuMcqTitle || 'Desafio Matemático', ok ? `Acertou (${chosen}) +${pts} pts` : `Errou (marcou ${chosen})`);
+            document.getElementById('stu-action-area').innerHTML = `<div class="text-center py-5"><span class="text-5xl block mb-2">${ok?'✅':'💡'}</span><h3 class="font-display font-bold text-lg">${ok?`Acertou! (+${pts} pts)`:`Você marcou ${chosen}`}</h3></div>`;
         }
 
         function stuPickLifestyle(label, saved, wb, pts) {
-            updateStudentGroup({
-                saldo: Math.round(((stuGroupData.saldo || 0) + saved) * 100) / 100,
-                bemEstar: Math.max(0, Math.min(100, (stuGroupData.bemEstar ?? 80) + wb)),
-                cidadania: (stuGroupData.cidadania || 0) + pts,
-                statusAtual: label
-            });
-            document.getElementById('stu-action-area').innerHTML = `
-                <div class="text-center py-5 text-emerald-800 font-bold">
-                    <span class="text-4xl block mb-2">⚖️</span>
-                    Escolha registrada: <strong>${label}</strong>!<br>
-                    <span class="text-xs text-slate-500">Seu saldo e bem-estar acima já foram atualizados.</span>
-                </div>`;
+            updateStudentGroup({ saldo: Math.round(((stuGroupData.saldo||0)+saved)*100)/100, bemEstar: Math.max(0,Math.min(100,(stuGroupData.bemEstar??80)+wb)), cidadania: (stuGroupData.cidadania||0)+pts, statusAtual: label });
+            logStudentHistory(`Padrão de Vida: ${label}`, `${saved>0?'+'+formatBRL(saved):'R$ 0'} | Bem-Estar ${wb>=0?'+':''}${wb}%`);
+            document.getElementById('stu-action-area').innerHTML = `<div class="text-center py-5 text-emerald-800 font-bold"><span class="text-4xl block mb-2">⚖️</span>Escolha registrada: <strong>${label}</strong>!</div>`;
         }
 
         function stuFlipCard(idx) {
-            const c = window._stuHand[idx];
-            const opts = generateMoneyOptions(Math.abs(c.delta));
-            const correct = opts.find(o => o.isCorrect).letter;
+            const c = window._stuHand[idx], opts = generateMoneyOptions(Math.abs(c.delta)), correct = opts.find(o=>o.isCorrect).letter;
             document.getElementById('stu-action-area').innerHTML = `
-                <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${c.category==='beneficio'?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'} mb-2">${c.icon} ${c.category==='beneficio'?'Benefício':'Desafio'}</span>
-                <h3 class="font-display font-bold text-base text-slate-900 mb-1">${c.title}</h3>
+                <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${c.category==='beneficio'?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'} mb-2">${c.icon} ${c.title}</span>
                 <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border mb-2.5">${c.desc}</p>
-                <p class="text-sm font-extrabold text-slate-900 mb-3">❓ ${c.question}</p>
-                <div class="grid grid-cols-1 gap-2">
-                    ${opts.map(o => `<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${c.delta},15,'${c.title}')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}
-                </div>`;
+                <p class="text-sm font-extrabold mb-3">❓ ${c.question}</p>
+                <div class="grid grid-cols-1 gap-2">${opts.map(o => `<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${c.delta},15,'Carta: ${c.title}')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
         }
 
         function renderStuHabits() {
-            const sel = window._stuSelHabits;
-            const tot = window._stuHabits.filter(h => sel.has(h.id)).reduce((a, h) => a + h.kwhSaved, 0);
+            const sel = window._stuSelHabits, tot = window._stuHabits.filter(h=>sel.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0);
             document.getElementById('stu-action-area').innerHTML = `
-                <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 mb-2">🌱 Dia 27 • Tarifa ${formatBRL(window._stuTariff)}/kWh</span>
-                <h3 class="font-display font-bold text-base text-slate-900 mb-2">Escolha 3 Hábitos (${sel.size}/3)</h3>
-                <div class="space-y-1.5 mb-3">
-                    ${window._stuHabits.map(h => `<button onclick="stuToggleHabit('${h.id}')" class="w-full text-left p-2.5 rounded-xl border-2 text-xs font-extrabold flex justify-between ${sel.has(h.id)?'bg-emerald-50 border-emerald-500 text-emerald-900':'bg-white border-slate-200'}"><span>${h.icon} ${h.title}</span><span>−${h.kwhSaved} kWh</span></button>`).join('')}
-                </div>
+                <h3 class="font-display font-bold text-base mb-2">🌱 Escolha 3 Hábitos (${sel.size}/3)</h3>
+                <div class="space-y-1.5 mb-3">${window._stuHabits.map(h=>`<button onclick="stuToggleHabit('${h.id}')" class="w-full text-left p-2.5 rounded-xl border-2 text-xs font-extrabold flex justify-between ${sel.has(h.id)?'bg-emerald-50 border-emerald-500':'bg-white'}"><span>${h.icon} ${h.title}</span><span>−${h.kwhSaved} kWh</span></button>`).join('')}</div>
                 <button onclick="stuConfirmHabits()" ${sel.size!==3?'disabled':''} class="w-full py-3 rounded-xl font-extrabold text-sm ${sel.size===3?'bg-emerald-600 text-white':'bg-slate-200 text-slate-400'}">Calcular Economia (${tot} kWh) ▶</button>`;
         }
-
-        function stuToggleHabit(id) {
-            if (window._stuSelHabits.has(id)) window._stuSelHabits.delete(id);
-            else if (window._stuSelHabits.size < 3) window._stuSelHabits.add(id);
-            renderStuHabits();
-        }
-
+        function stuToggleHabit(id) { if (window._stuSelHabits.has(id)) window._stuSelHabits.delete(id); else if (window._stuSelHabits.size<3) window._stuSelHabits.add(id); renderStuHabits(); }
         function stuConfirmHabits() {
-            const kwh = window._stuHabits.filter(h => window._stuSelHabits.has(h.id)).reduce((a, h) => a + h.kwhSaved, 0);
-            const saved = Math.round(kwh * window._stuTariff * 100) / 100;
-            const opts = generateMoneyOptions(saved, [saved + 15, Math.max(10, saved - 12), kwh]);
-            const correct = opts.find(o => o.isCorrect).letter;
+            const chosen = window._stuHabits.filter(h=>window._stuSelHabits.has(h.id));
+            const kwh = chosen.reduce((a,h)=>a+h.kwhSaved,0), saved = Math.round(kwh*window._stuTariff*100)/100;
+            const opts = generateMoneyOptions(saved,[saved+15,kwh]), correct = opts.find(o=>o.isCorrect).letter;
             document.getElementById('stu-action-area').innerHTML = `
-                <h3 class="font-display font-bold text-base text-slate-900 mb-2">⚡ Calcule sua Economia</h3>
-                <p class="text-xs text-slate-600 bg-emerald-50 p-2.5 rounded-xl mb-3">Vocês cortaram <strong>${kwh} kWh</strong>. Multiplicando pela tarifa de <strong>${formatBRL(window._stuTariff)}/kWh</strong>, quanto economizaram?</p>
-                <div class="grid grid-cols-1 gap-2">
-                    ${opts.map(o => `<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${saved},20,'Economizou ${formatBRL(saved)}')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}
-                </div>`;
+                <h3 class="font-display font-bold text-base mb-2">⚡ Calcule sua Economia</h3>
+                <p class="text-xs bg-emerald-50 p-2.5 rounded-xl mb-3">Corte: <strong>${kwh} kWh</strong> × ${formatBRL(window._stuTariff)}/kWh. Quanto economizaram?</p>
+                <div class="grid grid-cols-1 gap-2">${opts.map(o=>`<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${saved},20,'Energia (-${kwh} kWh)')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
         }
 
         function stuPickInv(idx) {
-            const m = window._stuInvMods[idx], cap = stuGroupData.saldo;
-            const delta = Math.round(cap * m.rate * 100) / 100, upd = Math.round((cap + delta) * 100) / 100;
+            const m = window._stuInvMods[idx], cap = stuGroupData.saldo, delta = Math.round(cap*m.rate*100)/100, upd = Math.round((cap+delta)*100)/100;
             const pct = `${m.rate>0?'+':''}${(m.rate*100).toFixed(1).replace('.0','').replace('.',',')}%`;
-            const opts = generateMoneyOptions(upd, [cap - delta, cap + Math.abs(delta)*2, cap * 1.03]);
-            const correct = opts.find(o => o.isCorrect).letter;
+            const opts = generateMoneyOptions(upd,[cap-delta, cap*1.03]), correct = opts.find(o=>o.isCorrect).letter;
             document.getElementById('stu-action-area').innerHTML = `
-                <h3 class="font-display font-bold text-base text-slate-900 mb-2">${m.icon} ${m.name}</h3>
-                <p class="text-xs text-slate-600 bg-indigo-50 p-2.5 rounded-xl mb-3">Capital: <strong>${formatBRL(cap)}</strong> • Variação: <strong>${pct}</strong>. Qual o novo saldo atualizado?</p>
-                <div class="grid grid-cols-1 gap-2">
-                    ${opts.map(o => `<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${delta},20,'${m.name}')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}
-                </div>`;
+                <h3 class="font-display font-bold text-base mb-2">${m.icon} ${m.name}</h3>
+                <p class="text-xs bg-indigo-50 p-2.5 rounded-xl mb-3">Capital: <strong>${formatBRL(cap)}</strong> • Variação: <strong>${pct}</strong>. Novo valor?</p>
+                <div class="grid grid-cols-1 gap-2">${opts.map(o=>`<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${delta},20,'Investiu: ${m.name}')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
         }
 
-        function stuAnswerDynamic(chosen, correct, saldoDelta, pts, statusLabel) {
+        function stuAnswerDynamic(chosen, correct, saldoDelta, pts, label) {
             const ok = chosen === correct;
-            updateStudentGroup({
-                saldo: Math.round(((stuGroupData.saldo || 0) + saldoDelta) * 100) / 100,
-                cidadania: (stuGroupData.cidadania || 0) + (ok ? pts : 5),
-                acertos: (stuGroupData.acertos || 0) + (ok ? 1 : 0),
-                statusAtual: statusLabel
-            });
-            document.getElementById('stu-action-area').innerHTML = `
-                <div class="text-center py-5">
-                    <span class="text-5xl block mb-2">${ok ? '✅' : '💡'}</span>
-                    <h3 class="font-display font-bold text-lg ${ok ? 'text-emerald-700' : 'text-amber-700'}">${ok ? 'Cálculo Exato!' : `Resposta certa: ${correct}`}</h3>
-                    <p class="text-xs text-slate-600 font-bold mt-1">Impacto no saldo: <strong>${saldoDelta >= 0 ? '+' : ''}${formatBRL(saldoDelta)}</strong></p>
-                </div>`;
+            updateStudentGroup({ saldo: Math.round(((stuGroupData.saldo||0)+saldoDelta)*100)/100, cidadania: (stuGroupData.cidadania||0)+(ok?pts:5), acertos: (stuGroupData.acertos||0)+(ok?1:0), statusAtual: label });
+            logStudentHistory(label, `${saldoDelta>=0?'+':''}${formatBRL(saldoDelta)} (${ok?'Cálculo exato':'Errou cálculo'})`);
+            document.getElementById('stu-action-area').innerHTML = `<div class="text-center py-5"><span class="text-5xl block mb-2">${ok?'✅':'💡'}</span><h3 class="font-display font-bold text-lg">${ok?'Cálculo Exato!':`Resposta certa: ${correct}`}</h3><p class="text-xs font-bold mt-1">Saldo: <strong>${saldoDelta>=0?'+':''}${formatBRL(saldoDelta)}</strong></p></div>`;
         }
 
         // =====================================================================
-        // 4. ÁUDIO, CONFETES, PERSONAGENS E ESTADO DO TELÃO
+        // 4. JOGO PRINCIPAL (TELÃO, PERSONAGENS, FASES E VISUAL NOVEL)
         // =====================================================================
-        const STORAGE_KEY = 'desafio_orcamento_v4';
-        const SoundFX = {
-            enabled: true, ctx: null,
-            play(type) {
-                if (!this.enabled) return;
-                try {
-                    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    if (this.ctx.state === 'suspended') this.ctx.resume();
-                    const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), g = this.ctx.createGain();
-                    osc.connect(g); g.connect(this.ctx.destination);
-                    osc.type = type === 'error' ? 'sawtooth' : 'triangle';
-                    osc.frequency.setValueAtTime(type === 'success' ? 660 : (type === 'error' ? 200 : 520), now);
-                    g.gain.setValueAtTime(0.08, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                    osc.start(now); osc.stop(now + 0.15);
-                } catch (_) {}
-            }
-        };
-        function toggleSound() { SoundFX.enabled = !SoundFX.enabled; document.getElementById('btn-sound-toggle').textContent = SoundFX.enabled ? '🔊' : '🔇'; }
-
-        function showToast(msg, type = 'info') {
-            const c = document.getElementById('toast-container'); if (!c) return;
-            const st = { info:'bg-slate-900 text-white', warning:'bg-amber-500 text-slate-950', success:'bg-emerald-600 text-white' };
-            const t = document.createElement('div');
-            t.className = `pointer-events-auto px-4 py-2.5 rounded-2xl shadow-lg text-xs font-extrabold animate-stage-in ${st[type] || st.info}`;
-            t.textContent = msg; c.appendChild(t);
-            setTimeout(() => t.remove(), 3000);
-        }
-
-        function launchConfetti() {
-            const canvas = document.getElementById('confetti-canvas'); if (!canvas) return;
-            const ctx = canvas.getContext('2d'); canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-            const cols = ['#6366f1','#10b981','#f59e0b','#ec4899'];
-            const ps = Array.from({length:60}, () => ({ x:Math.random()*canvas.width, y:-20-Math.random()*100, vx:(Math.random()-0.5)*4, vy:3+Math.random()*4, c:cols[Math.floor(Math.random()*4)] }));
-            let f = 0;
-            (function anim() { f++; ctx.clearRect(0,0,canvas.width,canvas.height); ps.forEach(p => { p.x+=p.vx; p.y+=p.vy; ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,7,5); }); if (f<100) requestAnimationFrame(anim); else ctx.clearRect(0,0,canvas.width,canvas.height); })();
-        }
+        const SoundFX = { enabled:true, ctx:null, play(t){ if(!this.enabled)return; try{ if(!this.ctx)this.ctx=new(window.AudioContext||window.webkitAudioContext)(); if(this.ctx.state==='suspended')this.ctx.resume(); const n=this.ctx.currentTime,o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.connect(g); g.connect(this.ctx.destination); o.type=t==='error'?'sawtooth':'triangle'; o.frequency.setValueAtTime(t==='success'?660:(t==='error'?200:520),n); g.gain.setValueAtTime(0.08,n); g.gain.exponentialRampToValueAtTime(0.001,n+0.15); o.start(n); o.stop(n+0.15); }catch(_){} } };
+        function toggleSound(){ SoundFX.enabled=!SoundFX.enabled; document.getElementById('btn-sound-toggle').textContent=SoundFX.enabled?'🔊':'🔇'; }
+        function showToast(m,t='info'){ const c=document.getElementById('toast-container'); if(!c)return; const el=document.createElement('div'); el.className=`pointer-events-auto px-4 py-2.5 rounded-2xl shadow-lg text-xs font-extrabold ${t==='warning'?'bg-amber-500 text-slate-950':'bg-slate-900 text-white'}`; el.textContent=m; c.appendChild(el); setTimeout(()=>el.remove(),3000); }
+        function launchConfetti(){ const cv=document.getElementById('confetti-canvas'); if(!cv)return; const ctx=cv.getContext('2d'); cv.width=window.innerWidth; cv.height=window.innerHeight; const ps=Array.from({length:55},()=>({x:Math.random()*cv.width,y:-20-Math.random()*100,vx:(Math.random()-0.5)*4,vy:3+Math.random()*4,c:['#6366f1','#10b981','#f59e0b','#ec4899'][Math.floor(Math.random()*4)]})); let f=0; (function a(){ f++; ctx.clearRect(0,0,cv.width,cv.height); ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,7,5);}); if(f<95)requestAnimationFrame(a); else ctx.clearRect(0,0,cv.width,cv.height); })(); }
 
         const FAMILY = {
-            ana: { id:'ana', name:'Ana Silva', role:'Mãe • Planejamento', badgeClass:'bg-teal-100 text-teal-800', quote:'Separar 15% logo no Dia 05 constrói nossa Reserva de Emergência!' },
-            carlos: { id:'carlos', name:'Carlos Silva', role:'Pai • Controle de Contas', badgeClass:'bg-blue-100 text-blue-800', quote:'Ajustar gastos variáveis com equilíbrio protege o bolso e o bem-estar!' },
-            lucas: { id:'lucas', name:'Lucas Silva', role:'Filho (14) • Investimentos', badgeClass:'bg-indigo-100 text-indigo-800', quote:'Investir com consciência vence a inflação!' },
-            maya: { id:'maya', name:'Maya Silva', role:'Filha (10) • Consumo Consciente', badgeClass:'bg-amber-100 text-amber-800', quote:'Pedir CPF na Nota e economizar luz ajuda o planeta e nosso bolso!' }
+            ana:{id:'ana',name:'Ana Silva',role:'Mãe • Planejamento',badgeClass:'bg-teal-100 text-teal-800',quote:'Separar 15% logo no Dia 05 constrói nossa Reserva!'},
+            carlos:{id:'carlos',name:'Carlos Silva',role:'Pai • Controle de Contas',badgeClass:'bg-blue-100 text-blue-800',quote:'Equilibrar gastos variáveis protege o bolso e o bem-estar!'},
+            lucas:{id:'lucas',name:'Lucas Silva',role:'Filho (14) • Investimentos',badgeClass:'bg-indigo-100 text-indigo-800',quote:'Investir com consciência vence a inflação!'},
+            maya:{id:'maya',name:'Maya Silva',role:'Filha (10) • Consumo Consciente',badgeClass:'bg-amber-100 text-amber-800',quote:'Pedir CPF na Nota ajuda o planeta e nosso bolso!'}
         };
 
-        function buildCharacterSVG(id, mood = 'neutral') {
+        function buildCharacterSVG(id, mood='neutral') {
             const m = { feliz:'<path class="svg-mouth" d="M 41 64 Q 50 73 59 64 Z" fill="#e11d48" />', surpreso:'<ellipse class="svg-mouth" cx="50" cy="66" rx="4.5" ry="6" fill="#be123c" />', preocupado:'<path class="svg-mouth" d="M 42 68 Q 50 62 58 68" stroke="#881337" stroke-width="2.6" fill="none" />', pensativo:'<path class="svg-mouth" d="M 44 66 L 56 64" stroke="#881337" stroke-width="2.6" fill="none" />', doente:'<path class="svg-mouth" d="M 42 68 Q 46 64 50 67 Q 54 70 58 66" stroke="#881337" stroke-width="2.4" fill="none" />', neutral:'<path class="svg-mouth" d="M 42 65 Q 50 70 58 65" stroke="#881337" stroke-width="2.6" fill="none" />' }[mood] || '';
             if (id==='ana') return `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="46" fill="#ccfbf1"/><g class="svg-breathe"><path d="M 24 46 C 22 72,26 86,33 90 L 67 90 C 74 86,78 72,76 46 Z" fill="#4a2c18"/><path d="M 26 92 C 28 76,72 76,74 92 Z" fill="#0d9488"/><ellipse cx="50" cy="50" rx="20" ry="23" fill="#fde0c2"/><path d="M 29 46 C 29 25,71 25,71 46 C 64 36,46 35,29 46 Z" fill="#5c3821"/><g class="svg-blink"><circle cx="41" cy="50" r="2.8" fill="#1e293b"/><circle cx="59" cy="50" r="2.8" fill="#1e293b"/></g><circle cx="41" cy="50" r="7" fill="none" stroke="#d97706" stroke-width="2"/><circle cx="59" cy="50" r="7" fill="none" stroke="#d97706" stroke-width="2"/>${m}</g></svg>`;
             if (id==='carlos') return `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="46" fill="#dbeafe"/><g class="svg-breathe"><path d="M 22 92 C 25 75,75 75,78 92 Z" fill="#2563eb"/><ellipse cx="50" cy="49" rx="21" ry="23" fill="#f5cba7"/><path d="M 29 44 C 29 23,71 23,71 44 C 66 34,34 34,29 44 Z" fill="#1e293b"/><path d="M 30 53 C 30 71,70 71,70 53 C 66 64,34 64,30 53 Z" fill="#334155" opacity="0.85"/><g class="svg-blink"><circle cx="41" cy="48" r="2.9" fill="#0f172a"/><circle cx="59" cy="48" r="2.9" fill="#0f172a"/></g>${m}</g></svg>`;
@@ -819,24 +842,18 @@
         }
 
         const PHASE_CONFIGS = [
-            { phase:1, monthName:'Mês 1', difficultyLabel:'Nível 1 • Base', badgeBg:'bg-sky-900', salaryAna:2400, salaryCarlos:1800, expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1150,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:180,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:320,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:950,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:240,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:110,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:280,type:'variavel'},{id:'e8',icon:'📚',name:'Material Escolar',amount:170,type:'fixo'}], healthEvent:{title:'Dia 18: Saúde & Genérico + CPF na Nota', itemDesc:'O tratamento custa R$ 180,00. Com genérico e CPF na Nota há 35% de desconto.', fullPrice:180, discountPct:35, ledgerDesc:'Medicamentos Maya'}, energyConfig:{tariff:0.80, bandeira:'Bandeira Verde'}, cardMix:['beneficio','beneficio','desafio','desafio'] },
-            { phase:2, monthName:'Mês 2', difficultyLabel:'Nível 2 • Reajuste', badgeBg:'bg-indigo-950', salaryAna:2400, salaryCarlos:1800, expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1220,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:190,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:350,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1040,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:260,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:120,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:310,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:190,type:'fixo'}], healthEvent:{title:'Dia 18: Exame Preventivo + CPF na Nota', itemDesc:'O exame custa R$ 220,00. Com rede parceira e CPF na Nota há 30% de desconto.', fullPrice:220, discountPct:30, ledgerDesc:'Exame Lucas'}, energyConfig:{tariff:0.85, bandeira:'Bandeira Amarela'}, cardMix:['beneficio','desafio','desafio','desafio'] },
-            { phase:3, monthName:'Mês 3', difficultyLabel:'Nível 3 • Pressão', badgeBg:'bg-amber-900', salaryAna:2400, salaryCarlos:1800, expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1280,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:200,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:380,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1120,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:290,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:130,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:320,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:200,type:'fixo'}], healthEvent:{title:'Dia 18: Óculos Ana + Nota Cidadã', itemDesc:'As lentes custam R$ 260,00. Com pesquisa e nota fiscal há 25% de desconto.', fullPrice:260, discountPct:25, ledgerDesc:'Óculos Ana'}, energyConfig:{tariff:0.90, bandeira:'Bandeira Vermelha P1'}, cardMix:['beneficio','desafio','desafio','desafio'] },
-            { phase:4, monthName:'Mês 4', difficultyLabel:'Nível 4 • Crise', badgeBg:'bg-rose-950', salaryAna:2400, salaryCarlos:1800, expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1320,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:210,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:410,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1180,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:320,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:140,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:310,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:210,type:'fixo'}], healthEvent:{title:'Dia 18: Dentista Carlos + Nota Cidadã', itemDesc:'O procedimento custa R$ 320,00. Com desconto preventivo há 25% OFF.', fullPrice:320, discountPct:25, ledgerDesc:'Dentista Carlos'}, energyConfig:{tariff:1.00, bandeira:'Bandeira Vermelha P2'}, cardMix:['beneficio','desafio','desafio','desafio'] }
+            { phase:1, monthName:'Mês 1', difficultyLabel:'Nível 1 • Base', badgeBg:'bg-sky-900', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1150,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:180,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:320,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:950,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:240,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:110,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:280,type:'variavel'},{id:'e8',icon:'📚',name:'Material Escolar',amount:170,type:'fixo'}], healthEvent:{title:'Dia 18: Saúde & Genérico + CPF na Nota', itemDesc:'O tratamento custa R$ 180,00. Com genérico e CPF na Nota há 35% de desconto.', fullPrice:180, discountPct:35, ledgerDesc:'Medicamentos Maya'}, energyConfig:{tariff:0.80, bandeira:'Bandeira Verde'} },
+            { phase:2, monthName:'Mês 2', difficultyLabel:'Nível 2 • Reajuste', badgeBg:'bg-indigo-950', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1220,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:190,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:350,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1040,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:260,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:120,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:310,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:190,type:'fixo'}], healthEvent:{title:'Dia 18: Exame Preventivo + CPF na Nota', itemDesc:'O exame custa R$ 220,00. Com rede parceira e CPF na Nota há 30% de desconto.', fullPrice:220, discountPct:30, ledgerDesc:'Exame Lucas'}, energyConfig:{tariff:0.85, bandeira:'Bandeira Amarela'} },
+            { phase:3, monthName:'Mês 3', difficultyLabel:'Nível 3 • Pressão', badgeBg:'bg-amber-900', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1280,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:200,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:380,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1120,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:290,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:130,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:320,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:200,type:'fixo'}], healthEvent:{title:'Dia 18: Óculos Ana + Nota Cidadã', itemDesc:'As lentes custam R$ 260,00. Com pesquisa e nota fiscal há 25% de desconto.', fullPrice:260, discountPct:25, ledgerDesc:'Óculos Ana'}, energyConfig:{tariff:0.90, bandeira:'Bandeira Vermelha P1'} },
+            { phase:4, monthName:'Mês 4', difficultyLabel:'Nível 4 • Crise', badgeBg:'bg-rose-950', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1320,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:210,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:410,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1180,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:320,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:140,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:310,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:210,type:'fixo'}], healthEvent:{title:'Dia 18: Dentista Carlos + Nota Cidadã', itemDesc:'O procedimento custa R$ 320,00. Com desconto preventivo há 25% OFF.', fullPrice:320, discountPct:25, ledgerDesc:'Dentista Carlos'}, energyConfig:{tariff:1.00, bandeira:'Bandeira Vermelha P2'} }
         ];
 
-        const GameState = { teamName:'', isDemoMode:false, phaseIndex:0, phaseStartBalance:200, milestoneIndex:0, dialogueIndex:0, balance:200, reserveBalance:0, wellbeing:80, fiscalPoints:0, day05Credited:false, timerSeconds:0, timerInterval:null, ledger:[], decisions:{ classifiedIds:[], lifestyleChoice:null } };
-        function getCurrentPhaseConfig() { return PHASE_CONFIGS[GameState.phaseIndex] || PHASE_CONFIGS[0]; }
-        function resetPhaseDecisions() { GameState.day05Credited = false; GameState.decisions = { classifiedIds:[], lifestyleChoice:null }; }
-        function resetGameState(demo) { GameState.isDemoMode=demo; GameState.phaseIndex=0; GameState.phaseStartBalance=200; GameState.milestoneIndex=0; GameState.dialogueIndex=0; GameState.balance=200; GameState.reserveBalance=0; GameState.wellbeing=80; GameState.fiscalPoints=0; GameState.timerSeconds=0; GameState.ledger=[{phase:1,day:'Dia 01',desc:'Saldo inicial',amount:200}]; resetPhaseDecisions(); }
-
-        function saveGameToStorage() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({...GameState, timerInterval:null})); } catch(_){} }
-        function checkSavedGame() { try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (!s) return; document.getElementById('resume-campaign-info').textContent = `${s.teamName||'Grupo'} • Fase ${s.phaseIndex+1}/4 • Saldo: ${formatBRL(s.balance)}`; document.getElementById('resume-campaign-banner').classList.remove('hidden'); } catch(_){} }
-        function resumeSavedGame() { const s = JSON.parse(localStorage.getItem(STORAGE_KEY)); Object.assign(GameState, s); GameState.timerInterval=null; document.getElementById('lobby-screen').classList.add('hidden'); const sh=document.getElementById('game-shell'); sh.classList.remove('hidden'); sh.classList.add('flex'); startTimer(); loadCurrentMilestone(); }
-        function clearSavedGame() { localStorage.removeItem(STORAGE_KEY); document.getElementById('resume-campaign-banner').classList.add('hidden'); }
-
-        function recordTransaction(day, desc, amount) { GameState.balance = Math.round((GameState.balance + amount)*100)/100; GameState.ledger.push({phase:getCurrentPhaseConfig().phase, day, desc, amount}); updateHUD(); saveGameToStorage(); }
-        function transferToReserve(day, amount) { GameState.balance = Math.round((GameState.balance - amount)*100)/100; GameState.reserveBalance = Math.round((GameState.reserveBalance + amount)*100)/100; GameState.ledger.push({phase:getCurrentPhaseConfig().phase, day, desc:'Reserva de Emergência (15%)', amount:-amount}); updateHUD(); saveGameToStorage(); }
+        const GameState = { teamName:'', isDemoMode:false, phaseIndex:0, milestoneIndex:0, dialogueIndex:0, balance:200, reserveBalance:0, wellbeing:80, fiscalPoints:0, day05Credited:false, timerSeconds:0, timerInterval:null, ledger:[], decisions:{ classifiedIds:[] } };
+        function getCurrentPhaseConfig(){ return PHASE_CONFIGS[GameState.phaseIndex] || PHASE_CONFIGS[0]; }
+        function resetPhaseDecisions(){ GameState.day05Credited=false; GameState.decisions={classifiedIds:[]}; }
+        function resetGameState(demo){ GameState.isDemoMode=demo; GameState.phaseIndex=0; GameState.milestoneIndex=0; GameState.dialogueIndex=0; GameState.balance=200; GameState.reserveBalance=0; GameState.wellbeing=80; GameState.fiscalPoints=0; GameState.timerSeconds=0; GameState.ledger=[{phase:1,day:'Dia 01',desc:'Saldo inicial',amount:200}]; resetPhaseDecisions(); }
+        function recordTransaction(day,desc,amount){ GameState.balance=Math.round((GameState.balance+amount)*100)/100; GameState.ledger.push({phase:getCurrentPhaseConfig().phase,day,desc,amount}); updateHUD(); }
+        function transferToReserve(day,amount){ GameState.balance=Math.round((GameState.balance-amount)*100)/100; GameState.reserveBalance=Math.round((GameState.reserveBalance+amount)*100)/100; GameState.ledger.push({phase:getCurrentPhaseConfig().phase,day,desc:'Reserva de Emergência (15%)',amount:-amount}); updateHUD(); }
 
         const ProceduralCards = {
             templates: [
@@ -851,247 +868,133 @@
         };
 
         const MCQRegistry = {};
-        function handleMCQAnswer(id, idx) { if (MCQRegistry[id]) MCQRegistry[id](idx); }
-        function generateMoneyOptions(c, extras = []) {
-            const clean = Math.round(Number(c)*100)/100, vals = [clean];
-            extras.forEach(d => { const r = Math.round(Number(d)*100)/100; if (!vals.some(v=>Math.abs(v-r)<0.01) && r>=0) vals.push(r); });
-            const offs = [15,-15,25,-20,40,10]; let i = 0;
-            while (vals.length < 4) { const cand = Math.max(5, Math.round((clean + offs[i++%offs.length])*100)/100); if (!vals.some(v=>Math.abs(v-cand)<0.01)) vals.push(cand); }
-            return vals.slice(0,4).sort(()=>Math.random()-0.5).map((v,idx) => ({ letter:['A','B','C','D'][idx], label:formatBRL(v), isCorrect:Math.abs(v-clean)<0.01 }));
+        function handleMCQAnswer(id, idx){ if (MCQRegistry[id]) MCQRegistry[id](idx); }
+        function generateMoneyOptions(c, extras=[]) {
+            const clean=Math.round(Number(c)*100)/100, vals=[clean];
+            extras.forEach(d=>{ const r=Math.round(Number(d)*100)/100; if(!vals.some(v=>Math.abs(v-r)<0.01)&&r>=0) vals.push(r); });
+            const offs=[15,-15,25,-20,40,10]; let i=0;
+            while(vals.length<4){ const cand=Math.max(5,Math.round((clean+offs[i++%offs.length])*100)/100); if(!vals.some(v=>Math.abs(v-cand)<0.01)) vals.push(cand); }
+            return vals.slice(0,4).sort(()=>Math.random()-0.5).map((v,idx)=>({ letter:['A','B','C','D'][idx], label:formatBRL(v), isCorrect:Math.abs(v-clean)<0.01 }));
         }
 
-        function renderMCQWidget({ badge, title, contextText, contextHtml, questionText, options, stepByStepHtml, points = 15, onComplete }) {
-            const wid = 'mcq_' + Math.random().toString(36).slice(2, 8);
-            const monId = `${wid}-mon`;
-            let resolved = false;
-
+        function renderMCQWidget({ badge, title, contextText, questionText, options, stepByStepHtml, points=15, onComplete }) {
+            const wid='mcq_'+Math.random().toString(36).slice(2,8), monId=`${wid}-mon`; let resolved=false;
             if (Classroom.active) {
-                const correctKey = options.find(o => o.isCorrect)?.letter;
-                setTimeout(() => Classroom.publishActivity({
-                    type:'mcq', badge, title, context: contextText || '', question: questionText,
-                    options: options.map(o => ({ key: o.letter, label: o.label })), correctKey, points
-                }, monId), 50);
+                const correctKey = options.find(o=>o.isCorrect)?.letter;
+                setTimeout(() => Classroom.publishActivity({ type:'mcq', badge, title, context:contextText, question:questionText, options:options.map(o=>({key:o.letter,label:o.label})), correctKey, points }, monId), 50);
             }
-
-            MCQRegistry[wid + '_go'] = (ok) => {
-                delete MCQRegistry[wid]; delete MCQRegistry[wid + '_go'];
-                if (Classroom.active) Classroom.clearActivity();
-                if (onComplete) onComplete(ok);
-            };
-
+            MCQRegistry[wid+'_go'] = (ok) => { delete MCQRegistry[wid]; delete MCQRegistry[wid+'_go']; if (Classroom.active) Classroom.clearActivity(); if (onComplete) onComplete(ok); };
             MCQRegistry[wid] = (idx) => {
-                if (resolved) return; resolved = true;
-                const chosen = options[idx], fb = document.getElementById(`${wid}-fb`);
-                document.querySelectorAll(`#${wid} .mcq-opt-btn`).forEach((b, i) => {
-                    b.disabled = true;
-                    if (options[i].isCorrect) b.classList.add('bg-emerald-50','border-emerald-500','ring-2','ring-emerald-200');
-                    else if (i===idx) b.classList.add('bg-rose-50','border-rose-500');
-                    else b.classList.add('opacity-60');
-                });
-                SoundFX.play(chosen.isCorrect ? 'success' : 'error');
-                if (chosen.isCorrect) launchConfetti();
-                fb.className = 'mt-5 p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 animate-stage-in';
-                fb.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><h4 class="font-bold text-base">${chosen.isCorrect?'✅ Resposta Exata!':'💡 Resolução:'}</h4><p class="text-xs sm:text-sm font-semibold mt-1">${stepByStepHtml}</p></div><button onclick="MCQRegistry['${wid}_go'](${chosen.isCorrect})" class="shrink-0 px-6 py-3 rounded-xl bg-emerald-600 text-white font-extrabold text-sm">Avançar ▶</button></div>`;
+                if (resolved) return; resolved=true;
+                const chosen=options[idx], fb=document.getElementById(`${wid}-fb`);
+                document.querySelectorAll(`#${wid} .mcq-opt-btn`).forEach((b,i)=>{ b.disabled=true; if(options[i].isCorrect)b.classList.add('bg-emerald-50','border-emerald-500','ring-2','ring-emerald-200'); else if(i===idx)b.classList.add('bg-rose-50','border-rose-500'); else b.classList.add('opacity-60'); });
+                SoundFX.play(chosen.isCorrect?'success':'error'); if(chosen.isCorrect) launchConfetti();
+                fb.className='mt-5 p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 animate-stage-in';
+                fb.innerHTML=`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><h4 class="font-bold text-base">${chosen.isCorrect?'✅ Resposta Exata!':'💡 Resolução:'}</h4><p class="text-xs sm:text-sm font-semibold mt-1">${stepByStepHtml}</p></div><button onclick="MCQRegistry['${wid}_go'](${chosen.isCorrect})" class="shrink-0 px-6 py-3 rounded-xl bg-emerald-600 text-white font-extrabold text-sm">Avançar ▶</button></div>`;
             };
-
             const monBar = Classroom.active ? `<div class="mb-4 p-3 rounded-2xl bg-indigo-50 border border-indigo-200"><span class="text-[11px] font-extrabold uppercase text-indigo-800 block mb-1.5">📡 Respostas dos Grupos no Celular:</span><div id="${monId}" class="flex flex-wrap gap-1.5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div></div>` : '';
-
-            return `
-                <div id="${wid}" class="bg-white rounded-3xl border border-slate-200 shadow-md p-5 sm:p-7 animate-stage-in">
-                    <span class="inline-block text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 mb-3">${badge}</span>
-                    <h3 class="text-xl sm:text-2xl font-bold text-slate-900 mb-3">${title}</h3>
-                    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 font-semibold mb-4">${contextHtml || contextText}</div>
-                    ${monBar}
-                    <p class="font-extrabold text-slate-900 text-base sm:text-lg mb-4">❓ ${questionText}</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        ${options.map((o,i) => `<button onclick="handleMCQAnswer('${wid}',${i})" class="mcq-opt-btn flex items-center gap-3 p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-indigo-400 text-left transition"><span class="w-8 h-8 rounded-xl bg-slate-100 font-bold flex items-center justify-center shrink-0">${o.letter}</span><span class="font-extrabold text-sm sm:text-base">${o.label}</span></button>`).join('')}
-                    </div>
-                    <div id="${wid}-fb" class="hidden"></div>
-                </div>`;
+            return `<div id="${wid}" class="bg-white rounded-3xl border border-slate-200 shadow-md p-5 sm:p-7 animate-stage-in">
+                <span class="inline-block text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 mb-3">${badge}</span>
+                <h3 class="text-xl sm:text-2xl font-bold text-slate-900 mb-3">${title}</h3>
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 font-semibold mb-4">${contextText}</div>
+                ${monBar}
+                <p class="font-extrabold text-slate-900 text-base sm:text-lg mb-4">❓ ${questionText}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${options.map((o,i)=>`<button onclick="handleMCQAnswer('${wid}',${i})" class="mcq-opt-btn flex items-center gap-3 p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-indigo-400 text-left transition"><span class="w-8 h-8 rounded-xl bg-slate-100 font-bold flex items-center justify-center shrink-0">${o.letter}</span><span class="font-extrabold text-sm sm:text-base">${o.label}</span></button>`).join('')}</div>
+                <div id="${wid}-fb" class="hidden"></div>
+            </div>`;
         }
 
-        // =====================================================================
-        // 5. OS 9 MARCOS DA JORNADA (TELÃO + AUTONOMIA NO CELULAR)
-        // =====================================================================
         const MILESTONES = [
             {
                 day:1, shortLabel:'D01', title:'Ponto de Partida',
-                dialogues:[
-                    {speaker:'ana',mood:'feliz',text:'Bem-vindos ao início de mais um mês! Vamos cuidar do saldo, da Reserva de Emergência e do Bem-Estar da família.'},
-                    {speaker:'carlos',mood:'neutral',text:'No Modo Turma, cada grupo acompanha seu próprio saldo e toma decisões direto pelo celular!'}
-                ],
-                renderStage(c) {
-                    const cfg = getCurrentPhaseConfig();
-                    c.innerHTML = `<div class="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-8 text-center animate-stage-in">
-                        <span class="inline-block text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-sky-100 text-sky-800 mb-3">📅 Fase ${cfg.phase}/4 • ${cfg.monthName}</span>
-                        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Abertura do ${cfg.monthName} da Família Silva</h2>
-                        <p class="text-slate-600 font-semibold mb-6">Salários previstos: R$ 4.200,00 • Despesas previstas: ${formatBRL(cfg.expenses.reduce((a,e)=>a+e.amount,0))}.</p>
-                        <button onclick="advanceToNextMilestone()" class="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-lg">Avançar para o Dia 05 (Pagamento) ▶</button>
-                    </div>`;
-                }
+                dialogues:[{speaker:'ana',mood:'feliz',text:'Bem-vindos ao início de mais um mês! Vamos cuidar do saldo, da Reserva de Emergência e do Bem-Estar da família.'}],
+                renderStage(c){ const cfg=getCurrentPhaseConfig(); c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-8 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-sky-100 text-sky-800">📅 Fase ${cfg.phase}/4 • ${cfg.monthName}</span><h2 class="text-2xl sm:text-3xl font-bold my-3">Abertura do ${cfg.monthName} da Família Silva</h2><p class="text-slate-600 font-semibold mb-6">Salários previstos: R$ 4.200,00 • Contas previstas: ${formatBRL(cfg.expenses.reduce((a,e)=>a+e.amount,0))}.</p><button onclick="advanceToNextMilestone()" class="px-8 py-4 rounded-2xl bg-indigo-600 text-white font-extrabold shadow-lg">Avançar para o Dia 05 ▶</button></div>`; }
             },
             {
                 day:5, shortLabel:'D05', title:'Pagamento & Reserva',
                 dialogues:[{speaker:'ana',mood:'feliz',text:'Os salários (R$ 4.200,00) caíram na conta! Vamos separar 15% para a nossa Reserva de Emergência (🛡️).'}],
-                renderStage(c) {
-                    const cfg = getCurrentPhaseConfig(), sal = 4200, res15 = 630;
-                    if (!GameState.day05Credited) { GameState.day05Credited = true; recordTransaction('Dia 05','Salários líquidos',sal); }
-                    const opts = generateMoneyOptions(res15, [420, 840, 510]);
-                    c.innerHTML = renderMCQWidget({
-                        badge:`🛡️ ${cfg.monthName} • Pague-se Primeiro`, title:'Dia 05: Transferindo 15% para a Reserva',
-                        contextText:'A família recebeu R$ 4.200,00 de salários líquidos e vai transferir 15% imediatamente para a Reserva de Emergência.',
-                        questionText:'Quanto corresponde a 15% de R$ 4.200,00?',
-                        options:opts, stepByStepHtml:'4200 × 0,15 = <strong>R$ 630,00</strong> transferidos para 🛡️ Reserva!',
-                        onComplete() {
-                            transferToReserve('Dia 05', res15);
-                            Classroom.applyGlobalDelta(sal - res15, res15, 0);
-                            advanceToNextMilestone();
-                        }
-                    });
+                renderStage(c){
+                    const cfg=getCurrentPhaseConfig();
+                    if(!GameState.day05Credited){ GameState.day05Credited=true; recordTransaction('Dia 05','Salários líquidos',4200); }
+                    c.innerHTML = renderMCQWidget({ badge:`🛡️ ${cfg.monthName} • Pague-se Primeiro`, title:'Dia 05: Transferindo 15% para a Reserva', contextText:'A família recebeu R$ 4.200,00 de salários e vai transferir 15% para a Reserva de Emergência.', questionText:'Quanto corresponde a 15% de R$ 4.200,00?', options:generateMoneyOptions(630,[420,840,510]), stepByStepHtml:'4200 × 0,15 = <strong>R$ 630,00</strong> transferidos para 🛡️ Reserva!', onComplete(){ transferToReserve('Dia 05',630); Classroom.applyGlobalDelta(4200-630, 630, 0); advanceToNextMilestone(); } });
                 }
             },
             {
                 day:10, shortLabel:'D10', title:'Contas & Padrão de Vida',
                 dialogues:[{speaker:'carlos',mood:'pensativo',text:'Vamos classificar as 8 contas do mês e depois cada grupo escolhe seu Padrão de Vida no celular!'}],
-                renderStage(c) {
-                    const cfg = getCurrentPhaseConfig(), exps = cfg.expenses, tot = exps.reduce((a,e)=>a+e.amount,0);
-                    function drawExp() {
-                        const done = GameState.decisions.classifiedIds;
-                        if (done.length === exps.length) { drawLife(); return; }
-                        c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 animate-stage-in">
-                            <h3 class="text-xl font-bold mb-3">Classifique as Contas (${done.length}/8) — Total: ${formatBRL(tot)}</h3>
-                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                ${exps.map(e => {
-                                    const ok = done.includes(e.id);
-                                    return `<div class="p-3 rounded-2xl border-2 ${ok?'bg-emerald-50 border-emerald-300':'bg-slate-50 border-slate-200'}">
-                                        <div class="flex justify-between mb-1"><span>${e.icon}</span><strong class="text-sm">${formatBRL(e.amount)}</strong></div>
-                                        <div class="font-bold text-xs mb-2">${e.name}</div>
-                                        ${ok ? `<div class="text-xs font-extrabold text-emerald-700 text-center">✓ ${e.type}</div>`
-                                             : `<div class="grid grid-cols-2 gap-1"><button onclick="clsExp('${e.id}','fixo')" class="py-1 rounded-lg bg-white border text-xs font-bold">Fixo</button><button onclick="clsExp('${e.id}','variavel')" class="py-1 rounded-lg bg-white border text-xs font-bold">Variável</button></div>`}
-                                    </div>`;
-                                }).join('')}
-                            </div>
-                        </div>`;
+                renderStage(c){
+                    const cfg=getCurrentPhaseConfig(), exps=cfg.expenses, tot=exps.reduce((a,e)=>a+e.amount,0);
+                    function drawExp(){
+                        const done=GameState.decisions.classifiedIds;
+                        if(done.length===exps.length){ drawLife(); return; }
+                        c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 animate-stage-in"><h3 class="text-xl font-bold mb-3">Classifique as Contas (${done.length}/8) — Total: ${formatBRL(tot)}</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${exps.map(e=>{const ok=done.includes(e.id);return `<div class="p-3 rounded-2xl border-2 ${ok?'bg-emerald-50 border-emerald-300':'bg-slate-50 border-slate-200'}"><div class="flex justify-between mb-1"><span>${e.icon}</span><strong class="text-sm">${formatBRL(e.amount)}</strong></div><div class="font-bold text-xs mb-2">${e.name}</div>${ok?`<div class="text-xs font-extrabold text-emerald-700 text-center">✓ ${e.type}</div>`:`<div class="grid grid-cols-2 gap-1"><button onclick="clsExp('${e.id}','fixo')" class="py-1 rounded-lg bg-white border text-xs font-bold">Fixo</button><button onclick="clsExp('${e.id}','variavel')" class="py-1 rounded-lg bg-white border text-xs font-bold">Variável</button></div>`}</div>`;}).join('')}</div></div>`;
                     }
-                    window.clsExp = (id, t) => {
-                        const it = exps.find(e=>e.id===id);
-                        if (it.type === t) { SoundFX.play('click'); GameState.decisions.classifiedIds.push(id); recordTransaction('Dia 10', it.name, -it.amount); if (GameState.decisions.classifiedIds.length === exps.length) Classroom.applyGlobalDelta(-tot, 0, 0); drawExp(); }
-                        else { SoundFX.play('error'); showToast('Tente novamente!', 'warning'); }
-                    };
-                    function drawLife() {
-                        if (Classroom.active) {
-                            Classroom.publishActivity({ type:'lifestyle' }, 'mon-lifestyle');
-                            c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in">
-                                <span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-teal-100 text-teal-800">⚖️ Autonomia nos Celulares</span>
-                                <h3 class="text-2xl font-bold my-2">Cada grupo está escolhendo seu Padrão de Vida no celular!</h3>
-                                <p class="text-sm text-slate-600 mb-4">As opções (Manter, Equilibrado ou Corte Radical) atualizam o saldo e o bem-estar de cada equipe individualmente.</p>
-                                <div id="mon-lifestyle" class="flex flex-wrap justify-center gap-2 mb-6"><span class="text-xs text-slate-400">Aguardando escolhas...</span></div>
-                                <button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Todos escolheram — Avançar ▶</button>
-                            </div>`;
+                    window.clsExp=(id,t)=>{ const it=exps.find(e=>e.id===id); if(it.type===t){ SoundFX.play('click'); GameState.decisions.classifiedIds.push(id); recordTransaction('Dia 10',it.name,-it.amount); if(GameState.decisions.classifiedIds.length===exps.length) Classroom.applyGlobalDelta(-tot,0,0); drawExp(); } else { SoundFX.play('error'); showToast('Tente novamente!','warning'); } };
+                    function drawLife(){
+                        if(Classroom.active){
+                            Classroom.publishActivity({type:'lifestyle'},'mon-lifestyle');
+                            c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-teal-100 text-teal-800">⚖️ Autonomia nos Celulares</span><h3 class="text-2xl font-bold my-2">Cada grupo está escolhendo seu Padrão de Vida no celular!</h3><div id="mon-lifestyle" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando escolhas...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Todos escolheram — Avançar ▶</button></div>`;
                         } else {
-                            c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 animate-stage-in">
-                                <h3 class="text-xl font-bold mb-4">Escolha o Padrão de Vida deste mês:</h3>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <button onclick="GameState.wellbeing=Math.min(100,GameState.wellbeing+5); advanceToNextMilestone();" class="p-4 rounded-2xl bg-slate-50 border-2 text-left"><strong>🍕 Manter Padrão</strong><span class="block text-xs mt-1">R$ 0 • +5% Bem-Estar</span></button>
-                                    <button onclick="recordTransaction('Dia 10','Plano Equilibrado',150); GameState.wellbeing=Math.min(100,GameState.wellbeing+5); advanceToNextMilestone();" class="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-left"><strong>🥗 Plano Equilibrado</strong><span class="block text-xs mt-1">+R$ 150 • +5% Bem-Estar</span></button>
-                                    <button onclick="recordTransaction('Dia 10','Corte Radical',280); GameState.wellbeing=Math.max(0,GameState.wellbeing-15); advanceToNextMilestone();" class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-left"><strong>✂️ Corte Radical</strong><span class="block text-xs mt-1">+R$ 280 • −15% Bem-Estar</span></button>
-                                </div>
-                            </div>`;
+                            c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6"><h3 class="text-xl font-bold mb-4">Escolha o Padrão de Vida:</h3><div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><button onclick="GameState.wellbeing=Math.min(100,GameState.wellbeing+5); advanceToNextMilestone();" class="p-4 rounded-2xl bg-slate-50 border-2 text-left"><strong>🍕 Manter</strong><span class="block text-xs">R$ 0 • +5% Bem-Estar</span></button><button onclick="recordTransaction('Dia 10','Plano Equilibrado',150); GameState.wellbeing=Math.min(100,GameState.wellbeing+5); advanceToNextMilestone();" class="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-left"><strong>🥗 Equilibrado</strong><span class="block text-xs">+R$ 150 • +5% Bem-Estar</span></button><button onclick="recordTransaction('Dia 10','Corte Radical',280); GameState.wellbeing=Math.max(0,GameState.wellbeing-15); advanceToNextMilestone();" class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-left"><strong>✂️ Corte Radical</strong><span class="block text-xs">+R$ 280 • −15% Bem-Estar</span></button></div></div>`;
                         }
                     }
                     drawExp();
                 }
             },
-            {
-                day:14, shortLabel:'D14', title:'Carta Surpresa 1',
-                dialogues:[{speaker:'lucas',mood:'surpreso',text:'Hora das Cartas Surpresa! No Modo Turma, cada grupo vira a própria carta no celular e resolve o cálculo!'}],
-                renderStage(c) { renderCardStage(c, 14); }
-            },
+            { day:14, shortLabel:'D14', title:'Carta Surpresa 1', dialogues:[{speaker:'lucas',mood:'surpreso',text:'Hora das Cartas Surpresa! Cada grupo vira a própria carta no celular e resolve o cálculo!'}], renderStage(c){ renderCardStage(c,14); } },
             {
                 day:18, shortLabel:'D18', title:'Saúde & Nota Cidadã',
                 dialogues:[{speaker:'maya',mood:'doente',text:'Surgiu um imprevisto de saúde! Vamos usar o desconto + CPF na Nota Fiscal Cidadã.'}],
-                renderStage(c) {
-                    const cfg = getCurrentPhaseConfig(), ev = cfg.healthEvent;
-                    const disc = Math.round(ev.fullPrice*(ev.discountPct/100)*100)/100, finalP = Math.round((ev.fullPrice-disc)*100)/100;
-                    c.innerHTML = renderMCQWidget({
-                        badge:`🏥 ${cfg.monthName} • Saúde & Cidadania`, title:ev.title, contextText:ev.itemDesc,
-                        questionText:`Aplicando ${ev.discountPct}% de desconto sobre ${formatBRL(ev.fullPrice)}, quanto a família vai pagar?`,
-                        options:generateMoneyOptions(finalP, [disc, ev.fullPrice-20, finalP+25]),
-                        stepByStepHtml:`Desconto: ${formatBRL(disc)} • Valor pago: <strong>${formatBRL(finalP)}</strong>.`,
-                        onComplete() { recordTransaction('Dia 18', ev.ledgerDesc, -finalP); Classroom.applyGlobalDelta(-finalP, 0, 5); advanceToNextMilestone(); }
-                    });
+                renderStage(c){
+                    const cfg=getCurrentPhaseConfig(), ev=cfg.healthEvent, disc=Math.round(ev.fullPrice*(ev.discountPct/100)*100)/100, finalP=Math.round((ev.fullPrice-disc)*100)/100;
+                    c.innerHTML = renderMCQWidget({ badge:`🏥 ${cfg.monthName} • Saúde & Cidadania`, title:ev.title, contextText:ev.itemDesc, questionText:`Aplicando ${ev.discountPct}% de desconto sobre ${formatBRL(ev.fullPrice)}, quanto a família vai pagar?`, options:generateMoneyOptions(finalP,[disc,ev.fullPrice-20,finalP+25]), stepByStepHtml:`Desconto: ${formatBRL(disc)} • Pago: <strong>${formatBRL(finalP)}</strong>.`, onComplete(){ recordTransaction('Dia 18',ev.ledgerDesc,-finalP); Classroom.applyGlobalDelta(-finalP,0,5); advanceToNextMilestone(); } });
                 }
             },
-            {
-                day:23, shortLabel:'D23', title:'Carta Surpresa 2',
-                dialogues:[{speaker:'carlos',mood:'pensativo',text:'Segunda Carta Surpresa do mês! Virem a carta no celular e façam o cálculo.'}],
-                renderStage(c) { renderCardStage(c, 23); }
-            },
+            { day:23, shortLabel:'D23', title:'Carta Surpresa 2', dialogues:[{speaker:'carlos',mood:'pensativo',text:'Segunda Carta Surpresa do mês! Virem a carta no celular e façam o cálculo.'}], renderStage(c){ renderCardStage(c,23); } },
             {
                 day:27, shortLabel:'D27', title:'Consumo Consciente (kWh)',
-                dialogues:[{speaker:'ana',mood:'feliz',text:'Cada grupo escolhe 3 hábitos de economia de energia no celular e calcula quanto vai poupar na conta de luz!'}],
-                renderStage(c) {
-                    const cfg = getCurrentPhaseConfig(), tariff = cfg.energyConfig.tariff;
-                    const habits = [{id:'h1',icon:'🚿',title:'Banhos de até 8 min',kwhSaved:50},{id:'h2',icon:'❄️',title:'Ar em 23°C + Timer',kwhSaved:35},{id:'h3',icon:'🔌',title:'Tirar stand-by',kwhSaved:20},{id:'h4',icon:'💡',title:'Lâmpadas LED',kwhSaved:15},{id:'h5',icon:'🧊',title:'Vedação geladeira',kwhSaved:18}];
-                    if (Classroom.active) {
-                        Classroom.publishActivity({ type:'energy_habits', habits, tariff }, 'mon-energy');
-                        c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in">
-                            <span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">🌱 ${cfg.energyConfig.bandeira} • ${formatBRL(tariff)}/kWh</span>
-                            <h3 class="text-2xl font-bold my-2">Os grupos estão escolhendo 3 hábitos no celular!</h3>
-                            <p class="text-sm text-slate-600 mb-4">Depois de escolher, cada grupo calcula a própria economia em Reais direto no celular.</p>
-                            <div id="mon-energy" class="flex flex-wrap justify-center gap-2 mb-6"><span class="text-xs text-slate-400">Aguardando grupos...</span></div>
-                            <button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Avançar para o Dia 28 ▶</button>
-                        </div>`;
+                dialogues:[{speaker:'ana',mood:'feliz',text:'Cada grupo escolhe 3 hábitos de economia de energia no celular e calcula quanto vai poupar!'}],
+                renderStage(c){
+                    const cfg=getCurrentPhaseConfig(), tariff=cfg.energyConfig.tariff;
+                    const habits=[{id:'h1',icon:'🚿',title:'Banhos de até 8 min',kwhSaved:50},{id:'h2',icon:'❄️',title:'Ar em 23°C + Timer',kwhSaved:35},{id:'h3',icon:'🔌',title:'Tirar stand-by',kwhSaved:20},{id:'h4',icon:'💡',title:'Lâmpadas LED',kwhSaved:15},{id:'h5',icon:'🧊',title:'Vedação geladeira',kwhSaved:18}];
+                    if(Classroom.active){
+                        Classroom.publishActivity({type:'energy_habits',habits,tariff},'mon-energy');
+                        c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">🌱 ${cfg.energyConfig.bandeira} • ${formatBRL(tariff)}/kWh</span><h3 class="text-2xl font-bold my-2">Os grupos estão escolhendo 3 hábitos no celular!</h3><div id="mon-energy" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Avançar para o Dia 28 ▶</button></div>`;
                         return;
                     }
-                    const sel = new Set();
-                    function drawH() {
-                        c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 animate-stage-in">
-                            <h3 class="text-xl font-bold mb-3">Escolha 3 Hábitos (${sel.size}/3) — Tarifa ${formatBRL(tariff)}/kWh</h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">${habits.map(h=>`<button onclick="tgH('${h.id}')" class="p-3 rounded-xl border-2 text-left ${sel.has(h.id)?'bg-emerald-50 border-emerald-500':'bg-white'}">${h.icon} <strong>${h.title}</strong> (−${h.kwhSaved} kWh)</button>`).join('')}</div>
-                            <button onclick="cfH()" ${sel.size!==3?'disabled':''} class="px-6 py-3 rounded-xl font-extrabold text-sm ${sel.size===3?'bg-emerald-600 text-white':'bg-slate-200 text-slate-400'}">Calcular Economia ▶</button>
-                        </div>`;
-                    }
-                    window.tgH = (id) => { if (sel.has(id)) sel.delete(id); else if (sel.size<3) sel.add(id); drawH(); };
-                    window.cfH = () => {
-                        const kwh = habits.filter(h=>sel.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0), saved = Math.round(kwh*tariff*100)/100;
-                        c.innerHTML = renderMCQWidget({ badge:'⚡ Energia', title:'Calcule a Economia', contextText:`Corte: ${kwh} kWh × ${formatBRL(tariff)}/kWh.`, questionText:'Quanto a família economizou?', options:generateMoneyOptions(saved,[saved+15,kwh]), stepByStepHtml:`${kwh} × ${formatBRL(tariff)} = <strong>${formatBRL(saved)}</strong>.`, onComplete(){ recordTransaction('Dia 27','Economia Energia',saved); advanceToNextMilestone(); } });
-                    };
+                    const sel=new Set();
+                    function drawH(){ c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6"><h3 class="text-xl font-bold mb-3">Escolha 3 Hábitos (${sel.size}/3) — ${formatBRL(tariff)}/kWh</h3><div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">${habits.map(h=>`<button onclick="tgH('${h.id}')" class="p-3 rounded-xl border-2 text-left ${sel.has(h.id)?'bg-emerald-50 border-emerald-500':'bg-white'}">${h.icon} <strong>${h.title}</strong> (−${h.kwhSaved} kWh)</button>`).join('')}</div><button onclick="cfH()" ${sel.size!==3?'disabled':''} class="px-6 py-3 rounded-xl font-extrabold text-sm ${sel.size===3?'bg-emerald-600 text-white':'bg-slate-200 text-slate-400'}">Calcular Economia ▶</button></div>`; }
+                    window.tgH=(id)=>{ if(sel.has(id))sel.delete(id); else if(sel.size<3)sel.add(id); drawH(); };
+                    window.cfH=()=>{ const kwh=habits.filter(h=>sel.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0), saved=Math.round(kwh*tariff*100)/100; c.innerHTML=renderMCQWidget({badge:'⚡ Energia',title:'Calcule a Economia',contextText:`Corte: ${kwh} kWh × ${formatBRL(tariff)}/kWh.`,questionText:'Quanto a família economizou?',options:generateMoneyOptions(saved,[saved+15,kwh]),stepByStepHtml:`${kwh} × ${formatBRL(tariff)} = <strong>${formatBRL(saved)}</strong>.`,onComplete(){recordTransaction('Dia 27','Economia Energia',saved);advanceToNextMilestone();}}); };
                     drawH();
                 }
             },
             {
                 day:28, shortLabel:'D28', title:'Investimento / Dívida',
-                dialogues:[{speaker:'lucas',mood:'pensativo',text:'Dia 28! Cada grupo decide no celular onde investir seu saldo (ou renegocia a dívida se estiver negativo)!'}],
-                renderStage(c) {
-                    if (Classroom.active) {
-                        Classroom.publishActivity({ type:'investment' }, 'mon-inv');
-                        c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in">
-                            <span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800">📈 Autonomia nos Celulares</span>
-                            <h3 class="text-2xl font-bold my-2">Cada grupo está investindo (ou renegociando) no celular!</h3>
-                            <div id="mon-inv" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div>
-                            <button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Ir para o Fechamento (Dia 30) ▶</button>
-                        </div>`;
+                dialogues:[{speaker:'lucas',mood:'pensativo',text:'Dia 28! Cada grupo decide no celular onde investir seu saldo (ou renegocia a dívida)!'}],
+                renderStage(c){
+                    if(Classroom.active){
+                        Classroom.publishActivity({type:'investment'},'mon-inv');
+                        c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800">📈 Autonomia nos Celulares</span><h3 class="text-2xl font-bold my-2">Cada grupo está investindo (ou renegociando) no celular!</h3><div id="mon-inv" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Ir para o Fechamento (Dia 30) ▶</button></div>`;
                         return;
                     }
-                    c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in">
-                        <h3 class="text-xl font-bold mb-4">Saldo atual: ${formatBRL(GameState.balance)}</h3>
-                        <button onclick="recordTransaction('Dia 28','Rendimento Tesouro Selic (+1%)', Math.round(Math.max(0,GameState.balance)*0.01*100)/100); advanceToNextMilestone();" class="px-7 py-3.5 rounded-2xl bg-emerald-600 text-white font-extrabold">Aplicar no Tesouro Selic (+1%) e Fechar Mês ▶</button>
-                    </div>`;
+                    c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center"><h3 class="text-xl font-bold mb-4">Saldo atual: ${formatBRL(GameState.balance)}</h3><button onclick="recordTransaction('Dia 28','Tesouro Selic (+1%)',Math.round(Math.max(0,GameState.balance)*0.01*100)/100); advanceToNextMilestone();" class="px-7 py-3.5 rounded-2xl bg-emerald-600 text-white font-extrabold">Aplicar no Tesouro Selic (+1%) ▶</button></div>`;
                 }
             },
             {
                 day:30, shortLabel:'D30', title:'Fechamento do Mês',
-                dialogues:[{speaker:'ana',mood:'feliz',text:'Fechamos o mês! Vamos conferir o placar comparativo dos grupos e preparar o próximo mês!'}],
-                renderStage(c) {
-                    const cfg = getCurrentPhaseConfig(), isLast = GameState.phaseIndex >= PHASE_CONFIGS.length - 1;
-                    if (Classroom.active) openLeaderboardModal();
-                    c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in">
-                        <h2 class="text-2xl font-bold mb-3">🏁 Fechamento ${cfg.monthName} (Fase ${cfg.phase}/4)</h2>
-                        <div class="print-hidden flex flex-wrap justify-center gap-3 mt-5">
-                            ${Classroom.active ? `<button onclick="openLeaderboardModal()" class="px-6 py-3.5 rounded-2xl bg-amber-500 text-slate-950 font-extrabold">🏆 Ver Placar dos Grupos</button>` : ''}
-                            ${!isLast ? `<button onclick="startNextPhase()" class="px-7 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Avançar para Fase ${cfg.phase+1} ▶</button>` : ''}
-                            <button onclick="window.print()" class="px-5 py-3.5 rounded-2xl bg-slate-800 text-white font-extrabold text-sm">🖨️ Imprimir / PDF</button>
+                dialogues:[{speaker:'ana',mood:'feliz',text:'Fechamos o mês! Clique em "Ver Resultado" para abrir o Dashboard com a equipe campeã e o histórico de escolhas!'}],
+                renderStage(c){
+                    const cfg=getCurrentPhaseConfig(), isLast=GameState.phaseIndex>=PHASE_CONFIGS.length-1;
+                    c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-8 text-center animate-stage-in">
+                        <span class="inline-block text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 mb-2">🏁 Fechamento ${cfg.monthName} (Fase ${cfg.phase}/4)</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">${isLast ? 'Campanha Concluída!' : `Fim do ${cfg.monthName}!`}</h2>
+                        <p class="text-sm text-slate-600 font-semibold mb-6">Veja o ranking completo, a equipe campeã e todo o histórico de decisões de cada grupo (com opção de salvar em PDF).</p>
+                        <div class="flex flex-wrap justify-center gap-3">
+                            <button onclick="openResultsDashboard()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-base shadow-lg transition">
+                                📊 Ver Resultado (Dashboard + PDF)
+                            </button>
+                            ${!isLast ? `<button onclick="startNextPhase()" class="px-7 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-md">Avançar para Fase ${cfg.phase+1} ▶</button>` : ''}
                         </div>
                     </div>`;
                 }
@@ -1101,95 +1004,72 @@
         function renderCardStage(c, dayNum) {
             const hand = ProceduralCards.drawHand();
             if (Classroom.active) {
-                Classroom.publishActivity({ type:'card_pick', day:dayNum, cards:hand }, `mon-card-${dayNum}`);
-                c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in">
-                    <span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-purple-100 text-purple-800">🃏 Dia ${dayNum} • Autonomia nos Celulares</span>
-                    <h3 class="text-2xl font-bold my-2">Cada grupo está virando sua Carta Surpresa no celular!</h3>
-                    <p class="text-sm text-slate-600 mb-4">Cada equipe resolve o cálculo da carta que sorteou e tem o saldo atualizado individualmente.</p>
-                    <div id="mon-card-${dayNum}" class="flex flex-wrap justify-center gap-2 mb-6"><span class="text-xs text-slate-400">Aguardando grupos...</span></div>
-                    <button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Todos concluíram — Avançar ▶</button>
-                </div>`;
+                Classroom.publishActivity({type:'card_pick', day:dayNum, cards:hand}, `mon-card-${dayNum}`);
+                c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-purple-100 text-purple-800">🃏 Dia ${dayNum} • Autonomia nos Celulares</span><h3 class="text-2xl font-bold my-2">Cada grupo está virando sua Carta Surpresa no celular!</h3><div id="mon-card-${dayNum}" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Todos concluíram — Avançar ▶</button></div>`;
                 return;
             }
-            c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 animate-stage-in">
-                <h3 class="text-xl font-bold mb-4">🃏 Dia ${dayNum}: Escolha 1 Carta</h3>
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${hand.map((cd,i)=>`<button onclick="pickOffCard(${i})" class="h-36 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white font-bold flex flex-col items-center justify-center"><span class="text-3xl mb-1">🎴</span>Carta #${i+1}</button>`).join('')}</div>
-            </div>`;
-            window.pickOffCard = (i) => {
-                const cd = hand[i];
-                c.innerHTML = renderMCQWidget({ badge:`🃏 ${cd.title}`, title:cd.title, contextText:cd.desc, questionText:cd.question, options:generateMoneyOptions(Math.abs(cd.delta)), stepByStepHtml:cd.steps, onComplete(){ recordTransaction(`Dia ${dayNum}`,cd.title,cd.delta); advanceToNextMilestone(); } });
-            };
+            c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6"><h3 class="text-xl font-bold mb-4">🃏 Dia ${dayNum}: Escolha 1 Carta</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${hand.map((cd,i)=>`<button onclick="pickOffCard(${i})" class="h-32 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white font-bold flex flex-col items-center justify-center"><span class="text-3xl">🎴</span>Carta #${i+1}</button>`).join('')}</div></div>`;
+            window.pickOffCard=(i)=>{ const cd=hand[i]; c.innerHTML=renderMCQWidget({badge:`🃏 ${cd.title}`,title:cd.title,contextText:cd.desc,questionText:cd.question,options:generateMoneyOptions(Math.abs(cd.delta)),stepByStepHtml:cd.steps,onComplete(){recordTransaction(`Dia ${dayNum}`,cd.title,cd.delta);advanceToNextMilestone();}}); };
         }
 
-        function startNextPhase() {
-            GameState.phaseIndex++; GameState.milestoneIndex = 0; GameState.dialogueIndex = 0; resetPhaseDecisions();
-            loadCurrentMilestone();
-        }
+        function startNextPhase(){ GameState.phaseIndex++; GameState.milestoneIndex=0; GameState.dialogueIndex=0; resetPhaseDecisions(); loadCurrentMilestone(); }
 
-        // =====================================================================
-        // 6. VISUAL NOVEL, HUD, CALCULADORA E INICIALIZAÇÃO
-        // =====================================================================
-        let tTimer = null, isTyp = false, fText = '';
-        function renderDialogueBar() {
-            const ms = MILESTONES[GameState.milestoneIndex], d = ms.dialogues[GameState.dialogueIndex] || ms.dialogues[ms.dialogues.length-1], ch = FAMILY[d.speaker];
-            const box = document.getElementById('vn-avatar-box');
-            box.className = `w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-100 border-2 border-indigo-200 p-1 flex items-center justify-center mood-${d.mood}`;
-            box.innerHTML = `<div class="avatar-stage w-full h-full is-speaking">${buildCharacterSVG(d.speaker, d.mood)}</div>`;
-            document.getElementById('vn-family-strip').innerHTML = Object.values(FAMILY).filter(f=>f.id!==d.speaker).map(f=>`<div class="w-6 h-6 rounded-lg bg-slate-100 border p-0.5">${buildCharacterSVG(f.id,'neutral')}</div>`).join('');
-            document.getElementById('vn-speaker-name').textContent = ch.name;
-            document.getElementById('vn-speaker-role').textContent = ch.role;
-            document.getElementById('vn-dialogue-counter').textContent = `${GameState.dialogueIndex+1} / ${ms.dialogues.length}`;
-            clearInterval(tTimer);
-            const el = document.getElementById('vn-dialogue-text'); el.textContent = ''; fText = d.text; isTyp = true; let i = 0;
-            tTimer = setInterval(() => { if (i < fText.length) el.textContent += fText.charAt(i++); else finishTyping(); }, 18);
+        let tTimer=null, isTyp=false, fText='';
+        function renderDialogueBar(){
+            const ms=MILESTONES[GameState.milestoneIndex], d=ms.dialogues[GameState.dialogueIndex]||ms.dialogues[ms.dialogues.length-1], ch=FAMILY[d.speaker];
+            const box=document.getElementById('vn-avatar-box');
+            box.className=`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-100 border-2 border-indigo-200 p-1 flex items-center justify-center mood-${d.mood}`;
+            box.innerHTML=`<div class="avatar-stage w-full h-full is-speaking">${buildCharacterSVG(d.speaker,d.mood)}</div>`;
+            document.getElementById('vn-family-strip').innerHTML=Object.values(FAMILY).filter(f=>f.id!==d.speaker).map(f=>`<div class="w-6 h-6 rounded-lg bg-slate-100 border p-0.5">${buildCharacterSVG(f.id,'neutral')}</div>`).join('');
+            document.getElementById('vn-speaker-name').textContent=ch.name; document.getElementById('vn-speaker-role').textContent=ch.role;
+            document.getElementById('vn-dialogue-counter').textContent=`${GameState.dialogueIndex+1} / ${ms.dialogues.length}`;
+            clearInterval(tTimer); const el=document.getElementById('vn-dialogue-text'); el.textContent=''; fText=d.text; isTyp=true; let i=0;
+            tTimer=setInterval(()=>{ if(i<fText.length)el.textContent+=fText.charAt(i++); else finishTyping(); },18);
             updateDialogueBtns();
         }
-        function finishTyping() { clearInterval(tTimer); isTyp = false; document.getElementById('vn-dialogue-text').textContent = fText; const s = document.querySelector('#vn-avatar-box .avatar-stage'); if (s) s.classList.remove('is-speaking'); updateDialogueBtns(); }
-        function updateDialogueBtns() { const has = GameState.dialogueIndex < MILESTONES[GameState.milestoneIndex].dialogues.length - 1; document.getElementById('vn-next-btn').classList.toggle('hidden', !(isTyp||has)); document.getElementById('vn-stage-hint').classList.toggle('hidden', isTyp||has); }
-        function advanceDialogue() { SoundFX.play('click'); if (isTyp) return finishTyping(); if (GameState.dialogueIndex < MILESTONES[GameState.milestoneIndex].dialogues.length - 1) { GameState.dialogueIndex++; renderDialogueBar(); } }
+        function finishTyping(){ clearInterval(tTimer); isTyp=false; document.getElementById('vn-dialogue-text').textContent=fText; const s=document.querySelector('#vn-avatar-box .avatar-stage'); if(s)s.classList.remove('is-speaking'); updateDialogueBtns(); }
+        function updateDialogueBtns(){ const has=GameState.dialogueIndex<MILESTONES[GameState.milestoneIndex].dialogues.length-1; document.getElementById('vn-next-btn').classList.toggle('hidden',!(isTyp||has)); document.getElementById('vn-stage-hint').classList.toggle('hidden',isTyp||has); }
+        function advanceDialogue(){ SoundFX.play('click'); if(isTyp)return finishTyping(); if(GameState.dialogueIndex<MILESTONES[GameState.milestoneIndex].dialogues.length-1){GameState.dialogueIndex++;renderDialogueBar();} }
 
-        function updateHUD() {
-            const ms = MILESTONES[GameState.milestoneIndex], cfg = getCurrentPhaseConfig();
-            document.getElementById('hud-phase-badge').className = `${cfg.badgeBg} text-white px-3 py-1.5 rounded-xl flex flex-col justify-center`;
-            document.getElementById('hud-phase-label').textContent = `Fase ${cfg.phase}/4 • ${cfg.monthName}`;
-            document.getElementById('hud-difficulty-label').textContent = cfg.difficultyLabel;
-            document.getElementById('hud-day').textContent = String(ms.day).padStart(2,'0');
-            document.getElementById('hud-milestone-name').textContent = ms.title;
-            document.getElementById('hud-balance').textContent = formatBRL(GameState.balance);
-            document.getElementById('hud-reserve').textContent = formatBRL(GameState.reserveBalance);
-            document.getElementById('hud-wellbeing').textContent = `${GameState.wellbeing}%`;
-            document.getElementById('hud-fiscal').textContent = `${GameState.fiscalPoints} pts`;
-            document.getElementById('hud-progress-dots').innerHTML = MILESTONES.map((m,i)=>`<span class="${i<GameState.milestoneIndex?'w-2 bg-emerald-500':(i===GameState.milestoneIndex?'w-4 bg-indigo-600':'w-2 bg-slate-300')} h-2 rounded-full"></span>`).join('');
-            document.getElementById('demo-day-shortcuts').innerHTML = MILESTONES.map((m,i)=>`<button onclick="demoJump(${i})" class="px-2 py-1 rounded-lg font-extrabold ${i===GameState.milestoneIndex?'bg-white text-purple-900':'bg-purple-800 text-purple-100'}">${m.shortLabel}</button>`).join('');
+        function updateHUD(){
+            const ms=MILESTONES[GameState.milestoneIndex], cfg=getCurrentPhaseConfig();
+            document.getElementById('hud-phase-badge').className=`${cfg.badgeBg} text-white px-3 py-1.5 rounded-xl flex flex-col justify-center`;
+            document.getElementById('hud-phase-label').textContent=`Fase ${cfg.phase}/4 • ${cfg.monthName}`;
+            document.getElementById('hud-difficulty-label').textContent=cfg.difficultyLabel;
+            document.getElementById('hud-day').textContent=String(ms.day).padStart(2,'0');
+            document.getElementById('hud-milestone-name').textContent=ms.title;
+            document.getElementById('hud-balance').textContent=formatBRL(GameState.balance);
+            document.getElementById('hud-reserve').textContent=formatBRL(GameState.reserveBalance);
+            document.getElementById('hud-wellbeing').textContent=`${GameState.wellbeing}%`;
+            document.getElementById('hud-fiscal').textContent=`${GameState.fiscalPoints} pts`;
+            document.getElementById('hud-progress-dots').innerHTML=MILESTONES.map((m,i)=>`<span class="${i<GameState.milestoneIndex?'w-2 bg-emerald-500':(i===GameState.milestoneIndex?'w-4 bg-indigo-600':'w-2 bg-slate-300')} h-2 rounded-full"></span>`).join('');
+            document.getElementById('demo-day-shortcuts').innerHTML=MILESTONES.map((m,i)=>`<button onclick="demoJump(${i})" class="px-2 py-1 rounded-lg font-extrabold ${i===GameState.milestoneIndex?'bg-white text-purple-900':'bg-purple-800 text-purple-100'}">${m.shortLabel}</button>`).join('');
         }
 
-        function loadCurrentMilestone() { GameState.dialogueIndex = 0; updateHUD(); renderDialogueBar(); const sc = document.getElementById('stage-container'); sc.innerHTML = ''; MILESTONES[GameState.milestoneIndex].renderStage(sc); }
-        function advanceToNextMilestone() { if (GameState.milestoneIndex < MILESTONES.length - 1) { GameState.milestoneIndex++; saveGameToStorage(); loadCurrentMilestone(); } }
-        function toggleDemoMode() { GameState.isDemoMode = !GameState.isDemoMode; document.getElementById('demo-presenter-bar').classList.toggle('hidden', !GameState.isDemoMode); }
-        function demoJump(i) { GameState.milestoneIndex = i; loadCurrentMilestone(); }
-        function startTimer() { if (GameState.timerInterval) clearInterval(GameState.timerInterval); GameState.timerInterval = setInterval(() => { GameState.timerSeconds++; document.getElementById('hud-timer').textContent = `${String(Math.floor(GameState.timerSeconds/60)).padStart(2,'0')}:${String(GameState.timerSeconds%60).padStart(2,'0')}`; }, 1000); }
-        function toggleCalculator() { document.getElementById('calculator-modal').classList.toggle('hidden'); }
-        let cBuf = '';
-        function calcPress(k) { if (k===',') k='.'; if (k==='C') cBuf=''; else if (k==='BACK') cBuf=cBuf.slice(0,-1); else if (k==='=') { try { cBuf=String(Math.round(Function(`"use strict";return(${cBuf})`)()*100)/100); } catch { cBuf=''; } } else cBuf+=k; document.getElementById('calc-screen').value=(cBuf||'0').replace(/\./g,','); }
+        function loadCurrentMilestone(){ GameState.dialogueIndex=0; updateHUD(); renderDialogueBar(); const sc=document.getElementById('stage-container'); sc.innerHTML=''; MILESTONES[GameState.milestoneIndex].renderStage(sc); }
+        function advanceToNextMilestone(){ if(GameState.milestoneIndex<MILESTONES.length-1){ GameState.milestoneIndex++; loadCurrentMilestone(); } }
+        function toggleDemoMode(){ GameState.isDemoMode=!GameState.isDemoMode; document.getElementById('demo-presenter-bar').classList.toggle('hidden',!GameState.isDemoMode); }
+        function demoJump(i){ GameState.milestoneIndex=i; loadCurrentMilestone(); }
+        function startTimer(){ if(GameState.timerInterval)clearInterval(GameState.timerInterval); GameState.timerInterval=setInterval(()=>{ GameState.timerSeconds++; document.getElementById('hud-timer').textContent=`${String(Math.floor(GameState.timerSeconds/60)).padStart(2,'0')}:${String(GameState.timerSeconds%60).padStart(2,'0')}`; },1000); }
+        function toggleCalculator(){ document.getElementById('calculator-modal').classList.toggle('hidden'); }
+        let cBuf=''; function calcPress(k){ if(k===',')k='.'; if(k==='C')cBuf=''; else if(k==='BACK')cBuf=cBuf.slice(0,-1); else if(k==='='){try{cBuf=String(Math.round(Function(`"use strict";return(${cBuf})`)()*100)/100);}catch{cBuf='';}} else cBuf+=k; document.getElementById('calc-screen').value=(cBuf||'0').replace(/\./g,','); }
 
-        function renderLobbyFamily() {
-            document.getElementById('lobby-family-grid').innerHTML = Object.values(FAMILY).map(m => `<button type="button" onclick="document.getElementById('lobby-char-quote').textContent='${m.name.split(' ')[0]}: \\'${m.quote}\\''" class="bg-white border rounded-2xl p-3 flex flex-col items-center shadow-sm mood-feliz"><div class="avatar-stage w-16 h-16 mb-1.5">${buildCharacterSVG(m.id,'feliz')}</div><span class="font-display font-bold text-xs">${m.name.split(' ')[0]}</span></button>`).join('');
-        }
+        function renderLobbyFamily(){ document.getElementById('lobby-family-grid').innerHTML=Object.values(FAMILY).map(m=>`<button type="button" onclick="document.getElementById('lobby-char-quote').textContent='${m.name.split(' ')[0]}: \\'${m.quote}\\''" class="bg-white border rounded-2xl p-3 flex flex-col items-center shadow-sm mood-feliz"><div class="avatar-stage w-16 h-16 mb-1.5">${buildCharacterSVG(m.id,'feliz')}</div><span class="font-display font-bold text-xs">${m.name.split(' ')[0]}</span></button>`).join(''); }
 
-        function startGame(demoMode, classroomMode) {
+        function startGame(demoMode, classroomMode){
             SoundFX.play('success'); resetGameState(demoMode);
-            GameState.teamName = document.getElementById('team-name-input').value.trim();
+            GameState.teamName=document.getElementById('team-name-input').value.trim();
             document.getElementById('lobby-screen').classList.add('hidden');
-            const sh = document.getElementById('game-shell'); sh.classList.remove('hidden'); sh.classList.add('flex');
-            document.getElementById('demo-presenter-bar').classList.toggle('hidden', !demoMode);
+            const sh=document.getElementById('game-shell'); sh.classList.remove('hidden'); sh.classList.add('flex');
+            document.getElementById('demo-presenter-bar').classList.toggle('hidden',!demoMode);
             startTimer(); loadCurrentMilestone();
-            if (classroomMode) Classroom.createRoom();
+            if(classroomMode) Classroom.createRoom();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             const p = new URLSearchParams(window.location.search);
             if (p.get('modo') === 'aluno' && p.get('sala')) initStudentMode(p.get('sala'));
-            else { document.getElementById('lobby-screen').classList.remove('hidden'); renderLobbyFamily(); checkSavedGame(); }
+            else { document.getElementById('lobby-screen').classList.remove('hidden'); renderLobbyFamily(); }
         });
     </script>
 </body>
