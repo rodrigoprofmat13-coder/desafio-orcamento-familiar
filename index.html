@@ -23,7 +23,7 @@
         ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 9999px; }
 
         @keyframes slideUpFade { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-stage-in { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-stage-in { animation: slideUpFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
         @keyframes charBreathe { 0%,100%{transform:translateY(0) scaleY(1)} 50%{transform:translateY(-2px) scaleY(1.015)} }
         @keyframes charBlink { 0%,46%,54%,100%{transform:scaleY(1)} 50%{transform:scaleY(0.08)} }
@@ -45,10 +45,9 @@
 
         #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
 
-        /* Impressão limpa exclusiva para o Dashboard de Resultados (PDF) */
         @media print {
             body { background: #ffffff !important; }
-            #lobby-screen, #game-shell, #student-app, #qr-modal, #calculator-modal, #confetti-canvas, #toast-container, .no-print {
+            #lobby-screen, #game-shell, #student-app, #qr-modal, #calculator-modal, #inv-info-modal, #confetti-canvas, #toast-container, .no-print {
                 display: none !important;
             }
             #results-dashboard {
@@ -79,10 +78,9 @@
             <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Conectado"></span>
         </header>
 
-        <!-- Tela de Entrada com Validação de Nome Único -->
         <div id="stu-join-view" class="my-auto bg-white rounded-3xl shadow-lg border border-slate-200 p-6 animate-stage-in">
             <h2 class="font-display text-2xl font-bold text-slate-900 mb-2">Qual é o nome do seu grupo?</h2>
-            <p class="text-sm text-slate-600 font-semibold mb-4">1 celular por grupo (o tesoureiro). Não é permitido repetir nomes já cadastrados na sala.</p>
+            <p class="text-sm text-slate-600 font-semibold mb-4">Use apenas 1 celular por grupo (o tesoureiro). Não é permitido repetir o nome de outra equipe da sala.</p>
             <input id="stu-name-input" type="text" maxlength="28" placeholder="Ex.: Equipe Economia Criativa"
                 class="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-base mb-2">
             <p id="stu-join-error" class="hidden text-xs font-extrabold text-rose-600 mb-3"></p>
@@ -92,7 +90,6 @@
             </button>
         </div>
 
-        <!-- Painel Financeiro do Grupo + Área Interativa -->
         <div id="stu-controller-view" class="hidden flex-1 flex flex-col gap-3 my-3">
             <div class="grid grid-cols-2 gap-2">
                 <div class="bg-white rounded-2xl p-2.5 border border-indigo-200 shadow-sm">
@@ -116,7 +113,7 @@
             <div id="stu-action-area" class="flex-1 bg-white rounded-3xl shadow-md border border-slate-200 p-4 overflow-y-auto flex flex-col justify-center">
                 <div class="text-center text-slate-500 font-bold">
                     <span class="text-4xl block mb-2">👀</span>
-                    Acompanhe a história da Família Silva no telão! Os desafios aparecerão aqui.
+                    Acompanhe a história da Família Silva no telão! Os desafios e perguntas aparecerão aqui.
                 </div>
             </div>
         </div>
@@ -223,10 +220,10 @@
                 </div>
 
                 <div class="flex items-center gap-1.5">
-                    <button id="btn-hud-qr" onclick="openQRModal()" class="hidden px-2.5 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-900 text-xs font-extrabold flex items-center gap-1" title="QR Code da Turma">
+                    <button id="btn-hud-qr" onclick="openQRModal()" class="hidden px-2.5 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 text-emerald-900 text-xs font-extrabold flex items-center gap-1" title="QR Code">
                         <span>📱</span><span id="hud-group-count">0</span>
                     </button>
-                    <button id="btn-hud-rank" onclick="openResultsDashboard()" class="hidden px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-extrabold" title="Ver Dashboard de Resultados">🏆 Resultado</button>
+                    <button id="btn-hud-rank" onclick="openResultsDashboard()" class="hidden px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-xs font-extrabold" title="Dashboard">🏆 Resultado</button>
                     <div class="hidden sm:flex items-center gap-1 bg-slate-100 border border-slate-200 px-2 py-1.5 rounded-xl text-xs font-extrabold text-slate-700 tabular-nums">
                         <span>⏱️</span><span id="hud-timer">00:00</span>
                     </div>
@@ -279,11 +276,48 @@
     </div>
 
     <!-- ===================================================================== -->
+    <!-- MODAL FLUTUANTE: EXPLICAÇÃO DO INVESTIMENTO (RISCOS E BENEFÍCIOS)     -->
+    <!-- ===================================================================== -->
+    <div id="inv-info-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-stage-in">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2.5">
+                    <span id="inv-modal-icon" class="text-3xl">🏦</span>
+                    <div>
+                        <span id="inv-modal-tag" class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Renda Fixa</span>
+                        <h3 id="inv-modal-name" class="font-display text-xl font-bold text-slate-900">Investimento</h3>
+                    </div>
+                </div>
+                <button onclick="closeInvInfoModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">&times;</button>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm font-semibold text-slate-700 my-4">
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5">
+                    <strong class="text-slate-900 block mb-0.5">📘 O que é este investimento?</strong>
+                    <p id="inv-modal-desc"></p>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 text-emerald-950">
+                    <strong class="text-emerald-800 block mb-0.5">✅ Benefícios e Vantagens:</strong>
+                    <p id="inv-modal-pros"></p>
+                </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-amber-950">
+                    <strong class="text-amber-800 block mb-0.5">⚠️ Riscos e Cuidados:</strong>
+                    <p id="inv-modal-cons"></p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2.5 mt-5">
+                <button onclick="closeInvInfoModal()" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-sm transition">← Voltar</button>
+                <button id="inv-modal-confirm-btn" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md transition">Escolher Este ▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
     <!-- DASHBOARD DE RESULTADO FINAL + HISTÓRICO POR EQUIPE (IMPRIMÍVEL PDF)  -->
     <!-- ===================================================================== -->
     <section id="results-dashboard" class="hidden fixed inset-0 bg-slate-100 z-50 overflow-y-auto p-4 sm:p-8">
         <div class="max-w-5xl mx-auto space-y-6 pb-10">
-            <!-- Barra Superior do Dashboard -->
             <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-600">📊 Relatório Final • Educação Financeira Consciente</span>
@@ -291,22 +325,14 @@
                     <p id="dash-meta-info" class="text-xs font-bold text-slate-500 mt-1"></p>
                 </div>
                 <div class="no-print flex flex-wrap items-center gap-2">
-                    <button onclick="window.print()" class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md transition">
-                        🖨️ Salvar em PDF
-                    </button>
-                    <button onclick="exportClassCSV()" class="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-sm transition">
-                        📥 CSV
-                    </button>
-                    <button onclick="closeResultsDashboard()" class="px-4 py-3 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-sm transition">
-                        ✖ Fechar
-                    </button>
+                    <button onclick="window.print()" class="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md transition">🖨️ Salvar em PDF</button>
+                    <button onclick="exportClassCSV()" class="px-4 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-sm transition">📥 CSV</button>
+                    <button onclick="closeResultsDashboard()" class="px-4 py-3 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-sm transition">✖ Fechar</button>
                 </div>
             </div>
 
-            <!-- Destaque da Equipe Campeã -->
             <div id="dash-champion-box"></div>
 
-            <!-- Tabela Comparativa Geral -->
             <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-6 break-inside-avoid">
                 <h3 class="font-display text-lg font-bold text-slate-900 mb-1">🏅 Classificação Geral (Índice de Equilíbrio)</h3>
                 <p class="text-xs font-semibold text-slate-500 mb-4">Fórmula: (Saldo + Reserva) ÷ 10 + (Bem-Estar × 3) + (Cidadania × 2)</p>
@@ -328,7 +354,6 @@
                 </div>
             </div>
 
-            <!-- Histórico Detalhado de Escolhas de Cada Equipe -->
             <div>
                 <h3 class="font-display text-xl font-bold text-slate-900 mb-3">📜 Histórico de Escolhas por Equipe</h3>
                 <div id="dash-histories-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -412,7 +437,220 @@
         }
 
         // =====================================================================
-        // 2. MOTOR MULTIPLAYER DE SALA DE AULA + DASHBOARD FINAL
+        // 2. CATÁLOGO DE INVESTIMENTOS (COM MODAL DE RISCOS E BENEFÍCIOS)
+        // =====================================================================
+        const INVESTMENT_CATALOG = [
+            {
+                id: 'poup', icon: '🏦', name: 'Caderneta de Poupança', tag: 'Renda Fixa • Segurança Máxima',
+                desc: 'É a aplicação mais tradicional dos bancos brasileiros, voltada para guardar dinheiro com facilidade e sem burocracia.',
+                pros: 'Você pode sacar o dinheiro a qualquer momento (liquidez imediata), não paga Imposto de Renda e tem risco baixíssimo.',
+                cons: 'O rendimento mensal é baixo (+0,5% ao mês), podendo perder poder de compra quando a inflação dos alimentos e serviços sobe.',
+                getRate: () => 0.005
+            },
+            {
+                id: 'selic', icon: '📜', name: 'Tesouro Selic / CDB 100% CDI', tag: 'Renda Fixa • Ideal p/ Reserva',
+                desc: 'São títulos públicos do Governo Federal ou certificados de bancos que rendem acompanhando a taxa básica de juros do país.',
+                pros: 'Tem altíssima segurança, permite resgate diário e rende mais do que a poupança (+1% ao mês neste cenário).',
+                cons: 'Há cobrança de Imposto de Renda apenas sobre o lucro obtido no momento em que o dinheiro é resgatado.',
+                getRate: () => 0.01
+            },
+            {
+                id: 'fiis', icon: '🏢', name: 'Fundos Imobiliários (FIIs)', tag: 'Renda Variável • Risco Moderado',
+                desc: 'Você compra pequenas cotas de galpões logísticos, shoppings ou prédios comerciais e participa do rendimento dos aluguéis.',
+                pros: 'Permite investir no mercado imobiliário com pouco dinheiro e tem potencial de rendimento acima da renda fixa (+2% ao mês).',
+                cons: 'O preço das cotas varia todos os dias e pode cair (−1% a −2%) se houver imóveis vazios ou alta nas taxas de juros.',
+                getRate: () => Math.random() >= 0.42 ? 0.02 : -0.01
+            },
+            {
+                id: 'bolsa', icon: '📈', name: 'Bolsa de Valores (Ações)', tag: 'Renda Variável • Risco Alto',
+                desc: 'Ao comprar ações na bolsa, você se torna sócio de uma pequena parte de grandes empresas brasileiras ou internacionais.',
+                pros: 'Oferece o maior potencial de crescimento do patrimônio no longo prazo (+5% ao mês em cenários econômicos positivos).',
+                cons: 'Tem alta volatilidade no curto prazo: crises ou notícias ruins podem causar quedas rápidas (−3% a −5%). Não é indicada para dinheiro de emergência.',
+                getRate: () => Math.random() >= 0.45 ? 0.05 : -0.03
+            }
+        ];
+
+        function openInvInfoModal(invIndex, onConfirmCallback) {
+            const m = INVESTMENT_CATALOG[invIndex];
+            if (!m) return;
+            document.getElementById('inv-modal-icon').textContent = m.icon;
+            document.getElementById('inv-modal-tag').textContent = m.tag;
+            document.getElementById('inv-modal-name').textContent = m.name;
+            document.getElementById('inv-modal-desc').textContent = m.desc;
+            document.getElementById('inv-modal-pros').textContent = m.pros;
+            document.getElementById('inv-modal-cons').textContent = m.cons;
+            const btn = document.getElementById('inv-modal-confirm-btn');
+            btn.onclick = () => { closeInvInfoModal(); if (typeof onConfirmCallback === 'function') onConfirmCallback(m); };
+            document.getElementById('inv-info-modal').classList.remove('hidden');
+        }
+        function closeInvInfoModal() { document.getElementById('inv-info-modal').classList.add('hidden'); }
+
+        // =====================================================================
+        // 3. MOTOR PROCEDURAL DE CARTAS (TEXTOS CLAROS E CONTEXTUALIZADOS)
+        // =====================================================================
+        const ProceduralCards = {
+            usedIds: new Set(),
+            templates: [
+                {
+                    id:'b1', category:'beneficio', icon:'🏛️', title:'Crédito da Nota Fiscal Cidadã',
+                    build(){
+                        const base = 600 + Math.floor(Math.random()*5)*100, pct = [10,15,20][Math.floor(Math.random()*3)], delta = Math.round(base*(pct/100));
+                        return {
+                            desc:`Durante o mês, a Família Silva pediu CPF na Nota em ${formatBRL(base)} de compras. O programa de cidadania fiscal liberou um retorno de ${pct}% sobre esse valor.`,
+                            delta,
+                            question:`Calculando ${pct}% sobre ${formatBRL(base)}, quantos reais entrarão como crédito extra na conta da família?`,
+                            steps:`Para achar ${pct}% de ${formatBRL(base)}, multiplicamos ${base} × ${(pct/100).toFixed(2).replace('.',',')} = ${formatBRL(delta)}.`
+                        };
+                    }
+                },
+                {
+                    id:'b2', category:'beneficio', icon:'📚', title:'Bazar de Livros e Jogos Usados',
+                    build(){
+                        const qty = 3 + Math.floor(Math.random()*5), unit = [20,25,30][Math.floor(Math.random()*3)], delta = qty*unit;
+                        return {
+                            desc:`Lucas e Maya organizaram o quarto e decidiram vender ${qty} livros e jogos que não usavam mais. Cada item foi vendido por ${formatBRL(unit)}.`,
+                            delta,
+                            question:`Multiplicando a quantidade de itens (${qty}) pelo preço de cada um (${formatBRL(unit)}), qual foi o valor total arrecadado?`,
+                            steps:`Multiplicamos ${qty} itens × ${formatBRL(unit)} = ${formatBRL(delta)} de renda extra.`
+                        };
+                    }
+                },
+                {
+                    id:'b3', category:'beneficio', icon:'🎂', title:'Encomenda de Bolos Caseiros',
+                    build(){
+                        const rev = 200 + Math.floor(Math.random()*4)*30, cost = 75 + Math.floor(Math.random()*3)*10, delta = rev-cost;
+                        return {
+                            desc:`Ana aceitou encomendas de bolos caseiros no fim de semana. Ela recebeu ${formatBRL(rev)} pelas vendas, mas precisou gastar ${formatBRL(cost)} comprando os ingredientes.`,
+                            delta,
+                            question:`Subtraindo o custo dos ingredientes (${formatBRL(cost)}) do total recebido (${formatBRL(rev)}), qual foi o lucro líquido que sobrou para a família?`,
+                            steps:`Lucro líquido = Receita − Custos → ${formatBRL(rev)} − ${formatBRL(cost)} = ${formatBRL(delta)}.`
+                        };
+                    }
+                },
+                {
+                    id:'b4', category:'beneficio', icon:'♻️', title:'Coleta Seletiva Premiada',
+                    build(){
+                        const kg = 30 + Math.floor(Math.random()*4)*10, price = 2.5, delta = kg*price;
+                        return {
+                            desc:`A família separou o lixo reciclável durante o mês e entregou ${kg} kg de papelão e plástico no ecoponto do bairro, que paga ${formatBRL(price)} por quilo.`,
+                            delta,
+                            question:`Quanto a família recebeu ao entregar os ${kg} kg de materiais recicláveis a ${formatBRL(price)} por quilo?`,
+                            steps:`Multiplicamos ${kg} kg × ${formatBRL(price)} = ${formatBRL(delta)}.`
+                        };
+                    }
+                },
+                {
+                    id:'b5', category:'beneficio', icon:'🛠️', title:'Serviço Extra de Fim de Semana',
+                    build(){
+                        const hrs = 3 + Math.floor(Math.random()*3), rate = [35,40,45][Math.floor(Math.random()*3)], delta = hrs*rate;
+                        return {
+                            desc:`Carlos foi chamado para fazer um serviço extra de manutenção elétrica no sábado. Ele trabalhou durante ${hrs} horas e cobrou ${formatBRL(rate)} por hora.`,
+                            delta,
+                            question:`Qual foi o valor total recebido por Carlos ao trabalhar ${hrs} horas recebendo ${formatBRL(rate)} por hora?`,
+                            steps:`Multiplicamos ${hrs} horas × ${formatBRL(rate)} = ${formatBRL(delta)}.`
+                        };
+                    }
+                },
+                {
+                    id:'b6', category:'beneficio', icon:'🚲', title:'Semana de Carona Solidária',
+                    build(){
+                        const days = 5, save = 14 + Math.floor(Math.random()*5)*2, delta = days*save;
+                        return {
+                            desc:`Para economizar combustível, Carlos combinou carona solidária com os vizinhos durante os ${days} dias úteis da semana, poupando ${formatBRL(save)} por dia.`,
+                            delta,
+                            question:`Ao final dos ${days} dias úteis economizando ${formatBRL(save)} por dia, quanto sobrou na conta da família?`,
+                            steps:`Multiplicamos ${days} dias × ${formatBRL(save)} = ${formatBRL(delta)} economizados.`
+                        };
+                    }
+                },
+                {
+                    id:'d1', category:'desafio', icon:'🚰', title:'Vazamento na Lavanderia',
+                    build(){
+                        const p = 50 + Math.floor(Math.random()*4)*10, m = 70 + Math.floor(Math.random()*4)*10, delta = -(p+m);
+                        return {
+                            desc:`Um cano estourou na lavanderia e precisou de conserto urgente. A família gastou ${formatBRL(p)} nas peças de encanamento e mais ${formatBRL(m)} com a mão de obra do encanador.`,
+                            delta,
+                            question:`Somando o valor das peças (${formatBRL(p)}) com a mão de obra (${formatBRL(m)}), qual foi o custo total desse imprevisto?`,
+                            steps:`Somamos ${formatBRL(p)} + ${formatBRL(m)} = ${formatBRL(p+m)} debitados do saldo.`
+                        };
+                    }
+                },
+                {
+                    id:'d2', category:'desafio', icon:'🛍️', title:'Armadilha do Parcelamento',
+                    build(){
+                        const parc = [50,55,60][Math.floor(Math.random()*3)], totParc = parc*3, avista = totParc - 25, delta = -avista;
+                        return {
+                            desc:`O liquidificador queimou. Na loja, o novo custa 3 parcelas de ${formatBRL(parc)} (totalizando ${formatBRL(totParc)}), mas pagando à vista sai por ${formatBRL(avista)}. A família escolheu pagar à vista para fugir dos juros!`,
+                            delta,
+                            question:`Qual foi o valor pago à vista pela família (economizando R$ 25,00 em relação ao parcelado)?`,
+                            steps:`Pagando à vista, o gasto foi de ${formatBRL(avista)} em vez de ${formatBRL(totParc)}.`
+                        };
+                    }
+                },
+                {
+                    id:'d3', category:'desafio', icon:'📱', title:'Tela Trincada do Celular',
+                    build(){
+                        const full = [180,200,240][Math.floor(Math.random()*3)], pct = 20, paid = Math.round(full*0.8), delta = -paid;
+                        return {
+                            desc:`O celular usado para trabalho caiu e trincou a tela. O conserto custa ${formatBRL(full)}, mas pagando à vista e pedindo nota fiscal a assistência deu ${pct}% de desconto.`,
+                            delta,
+                            question:`Descontando ${pct}% do valor original de ${formatBRL(full)}, quanto a família precisou pagar pelo conserto?`,
+                            steps:`20% de ${formatBRL(full)} = ${formatBRL(full-paid)} de desconto. Valor final: ${formatBRL(full)} − ${formatBRL(full-paid)} = ${formatBRL(paid)}.`
+                        };
+                    }
+                },
+                {
+                    id:'d4', category:'desafio', icon:'🌧️', title:'Telhas Quebradas no Temporal',
+                    build(){
+                        const qty = 3 + Math.floor(Math.random()*4), unit = [20,22,25][Math.floor(Math.random()*3)], delta = -(qty*unit);
+                        return {
+                            desc:`Uma chuva forte com vento quebrou ${qty} telhas da casa. Para evitar goteiras, Carlos foi à loja de materiais de construção, onde cada telha nova custa ${formatBRL(unit)}.`,
+                            delta,
+                            question:`Quanto a família vai gastar no total para comprar as ${qty} telhas novas a ${formatBRL(unit)} cada?`,
+                            steps:`Multiplicamos ${qty} telhas × ${formatBRL(unit)} = ${formatBRL(qty*unit)}.`
+                        };
+                    }
+                },
+                {
+                    id:'d5', category:'desafio', icon:'🛒', title:'Alta Sazonal nos Alimentos',
+                    build(){
+                        const basket = [300,400,500][Math.floor(Math.random()*3)], pct = [10,15][Math.floor(Math.random()*2)], delta = -Math.round(basket*(pct/100));
+                        return {
+                            desc:`Devido ao período de entressafra, os preços das frutas e verduras subiram ${pct}% em uma compra extra que estava estimada em ${formatBRL(basket)}.`,
+                            delta,
+                            question:`Qual foi o valor extra (acréscimo de ${pct}% sobre ${formatBRL(basket)}) que a família precisou pagar a mais?`,
+                            steps:`Calculamos ${pct}% de ${formatBRL(basket)}: ${basket} × ${(pct/100).toFixed(2).replace('.',',')} = ${formatBRL(Math.abs(delta))}.`
+                        };
+                    }
+                },
+                {
+                    id:'d6', category:'desafio', icon:'🧾', title:'Taxa Vencida com Multa',
+                    build(){
+                        const base = [120,150,180][Math.floor(Math.random()*3)], tot = Math.round(base*1.1), delta = -tot;
+                        return {
+                            desc:`Uma taxa anual de ${formatBRL(base)} acabou passando da data de vencimento e recebeu uma multa de 10% por atraso.`,
+                            delta,
+                            question:`Somando a multa de 10% ao valor original de ${formatBRL(base)}, qual será o valor total a pagar?`,
+                            steps:`10% de ${formatBRL(base)} = ${formatBRL(tot-base)}. Total com multa: ${formatBRL(base)} + ${formatBRL(tot-base)} = ${formatBRL(tot)}.`
+                        };
+                    }
+                }
+            ],
+            drawCard(cat) {
+                let pool = this.templates.filter(t => !this.usedIds.has(t.id) && (!cat || t.category === cat));
+                if (!pool.length) { this.usedIds.clear(); pool = this.templates.filter(t => !cat || t.category === cat); }
+                const tpl = pool[Math.floor(Math.random() * pool.length)];
+                this.usedIds.add(tpl.id);
+                return { templateId: tpl.id, category: tpl.category, icon: tpl.icon, title: tpl.title, ...tpl.build() };
+            },
+            drawHand() {
+                const mix = GameState.phaseIndex === 0 ? ['beneficio','beneficio','desafio','desafio'] : ['beneficio','desafio','desafio','desafio'];
+                return mix.map(c => this.drawCard(c)).sort(() => Math.random() - 0.5);
+            }
+        };
+
+        // =====================================================================
+        // 4. MOTOR MULTIPLAYER DE SALA DE AULA + DASHBOARD FINAL
         // =====================================================================
         const Classroom = {
             active: false, roomCode: null, groups: {}, currentActivityId: null, liveMonitorId: null,
@@ -438,22 +676,12 @@
                 const phase = getCurrentPhaseConfig().phase;
                 const dayNum = MILESTONES[GameState.milestoneIndex].day;
                 const updates = {};
-                Object.keys(this.groups).forEach(gid => {
-                    updates[`salas/${this.roomCode}/grupos/${gid}/statusAtual`] = 'pendente';
-                });
-                updates[`salas/${this.roomCode}/atividadeAtual`] = {
-                    id: this.currentActivityId,
-                    phase,
-                    dayLabel: `Dia ${String(dayNum).padStart(2, '0')}`,
-                    ...activityObj
-                };
+                Object.keys(this.groups).forEach(gid => { updates[`salas/${this.roomCode}/grupos/${gid}/statusAtual`] = 'pendente'; });
+                updates[`salas/${this.roomCode}/atividadeAtual`] = { id: this.currentActivityId, phase, dayLabel: `Dia ${String(dayNum).padStart(2, '0')}`, ...activityObj };
                 db.ref().update(updates);
             },
 
-            clearActivity() {
-                if (!this.active || !db) return;
-                db.ref(`salas/${this.roomCode}/atividadeAtual`).set(null);
-            },
+            clearActivity() { if (this.active && db) db.ref(`salas/${this.roomCode}/atividadeAtual`).set(null); },
 
             applyGlobalDelta(saldoDelta, reservaDelta = 0, bemEstarDelta = 0) {
                 if (!this.active || !db) return;
@@ -468,26 +696,12 @@
 
             updateMonitors() {
                 const list = Object.values(this.groups);
-                const cEl = document.getElementById('hud-group-count');
-                if (cEl) cEl.textContent = list.length;
-
+                const cEl = document.getElementById('hud-group-count'); if (cEl) cEl.textContent = list.length;
                 const qrList = document.getElementById('qr-connected-list');
-                if (qrList) {
-                    qrList.innerHTML = list.length
-                        ? list.map(g => `<span class="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-extrabold">👥 ${g.nome}</span>`).join('')
-                        : '<span class="text-xs text-slate-400 font-semibold">Nenhum grupo conectado ainda...</span>';
-                }
-
+                if (qrList) qrList.innerHTML = list.length ? list.map(g => `<span class="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-extrabold">👥 ${g.nome}</span>`).join('') : '<span class="text-xs text-slate-400">Nenhum grupo conectado...</span>';
                 if (this.liveMonitorId) {
                     const box = document.getElementById(this.liveMonitorId);
-                    if (box) {
-                        box.innerHTML = list.length
-                            ? list.map(g => {
-                                const done = g.statusAtual && g.statusAtual !== 'pendente';
-                                return `<span class="px-2.5 py-1 rounded-xl text-xs font-extrabold border ${done ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200 text-slate-500'}">${done ? '✅' : '⏳'} ${g.nome} ${done ? `(${g.statusAtual})` : ''}</span>`;
-                            }).join('')
-                            : '<span class="text-xs text-slate-400 font-semibold">Aguardando grupos escanearem o QR Code...</span>';
-                    }
+                    if (box) box.innerHTML = list.length ? list.map(g => { const done = g.statusAtual && g.statusAtual !== 'pendente'; return `<span class="px-2.5 py-1 rounded-xl text-xs font-extrabold border ${done?'bg-emerald-50 border-emerald-300 text-emerald-800':'bg-white border-slate-200 text-slate-500'}">${done?'✅':'⏳'} ${g.nome} ${done?`(${g.statusAtual})`:''}</span>`; }).join('') : '<span class="text-xs text-slate-400">Aguardando grupos...</span>';
                 }
             }
         };
@@ -504,107 +718,34 @@
         function openResultsDashboard() {
             const list = Classroom.active
                 ? Object.values(Classroom.groups).map(g => ({ ...g, score: calcEquilibriumScore(g) }))
-                : [{
-                    nome: GameState.teamName || 'Equipe Principal',
-                    saldo: GameState.balance,
-                    reserva: GameState.reserveBalance,
-                    bemEstar: GameState.wellbeing,
-                    cidadania: GameState.fiscalPoints,
-                    acertos: 0,
-                    historico: GameState.ledger.reduce((acc, item, idx) => { acc[idx] = { fase: item.phase, dia: item.day, acao: item.desc, detalhe: formatBRL(item.amount) }; return acc; }, {}),
-                    score: calcEquilibriumScore({ saldo: GameState.balance, reserva: GameState.reserveBalance, bemEstar: GameState.wellbeing, cidadania: GameState.fiscalPoints })
-                }];
-
+                : [{ nome: GameState.teamName || 'Equipe Principal', saldo: GameState.balance, reserva: GameState.reserveBalance, bemEstar: GameState.wellbeing, cidadania: GameState.fiscalPoints, acertos: 0, historico: GameState.ledger.reduce((acc, item, idx) => { acc[idx] = { fase: item.phase, dia: item.day, acao: item.desc, detalhe: formatBRL(item.amount) }; return acc; }, {}), score: calcEquilibriumScore({ saldo: GameState.balance, reserva: GameState.reserveBalance, bemEstar: GameState.wellbeing, cidadania: GameState.fiscalPoints }) }];
             list.sort((a, b) => b.score - a.score);
+            document.getElementById('dash-meta-info').textContent = `Sala: ${Classroom.roomCode || 'Individual'} • Gerado em ${new Date().toLocaleString('pt-BR')} • ${list.length} equipe(s)`;
 
-            const nowStr = new Date().toLocaleString('pt-BR');
-            document.getElementById('dash-meta-info').textContent = `Sala: ${Classroom.roomCode || 'Individual'} • Gerado em ${nowStr} • ${list.length} equipe(s)`;
-
-            // Cartão da Equipe Campeã
             const champBox = document.getElementById('dash-champion-box');
             if (list.length > 0) {
                 const c = list[0];
-                champBox.innerHTML = `
-                    <div class="bg-gradient-to-r from-amber-50 via-yellow-50 to-emerald-50 border-2 border-amber-300 rounded-3xl p-6 shadow-md flex flex-col sm:flex-row items-center justify-between gap-5 break-inside-avoid">
-                        <div class="flex items-center gap-4">
-                            <div class="w-16 h-16 rounded-2xl bg-amber-400 text-white text-4xl flex items-center justify-center shadow-md shrink-0">🏆</div>
-                            <div>
-                                <span class="text-xs font-extrabold uppercase tracking-wider text-amber-800">Equipe Campeã • Maior Equilíbrio Financeiro</span>
-                                <h3 class="font-display text-2xl sm:text-3xl font-bold text-slate-900">${c.nome}</h3>
-                                <p class="text-sm font-bold text-slate-600 mt-0.5">Índice Final: <strong class="text-indigo-700">${c.score} pts</strong> • Patrimônio Total: <strong class="text-emerald-700">${formatBRL((c.saldo||0)+(c.reserva||0))}</strong></p>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2.5 text-center w-full sm:w-auto">
-                            <div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Saldo</span><strong class="text-sm">${formatBRL(c.saldo)}</strong></div>
-                            <div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Reserva</span><strong class="text-sm text-emerald-700">${formatBRL(c.reserva)}</strong></div>
-                            <div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Bem-Estar</span><strong class="text-sm text-sky-700">${c.bemEstar ?? 80}%</strong></div>
-                        </div>
-                    </div>`;
-            } else {
-                champBox.innerHTML = '<div class="bg-white rounded-3xl p-6 text-center text-slate-500 font-bold">Nenhuma equipe registrada ainda.</div>';
+                champBox.innerHTML = `<div class="bg-gradient-to-r from-amber-50 via-yellow-50 to-emerald-50 border-2 border-amber-300 rounded-3xl p-6 shadow-md flex flex-col sm:flex-row items-center justify-between gap-5 break-inside-avoid"><div class="flex items-center gap-4"><div class="w-16 h-16 rounded-2xl bg-amber-400 text-white text-4xl flex items-center justify-center shadow-md shrink-0">🏆</div><div><span class="text-xs font-extrabold uppercase text-amber-800">Equipe Campeã • Maior Equilíbrio Financeiro</span><h3 class="font-display text-2xl sm:text-3xl font-bold text-slate-900">${c.nome}</h3><p class="text-sm font-bold text-slate-600 mt-0.5">Índice Final: <strong class="text-indigo-700">${c.score} pts</strong> • Patrimônio: <strong class="text-emerald-700">${formatBRL((c.saldo||0)+(c.reserva||0))}</strong></p></div></div><div class="grid grid-cols-3 gap-2 text-center w-full sm:w-auto"><div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Saldo</span><strong class="text-sm">${formatBRL(c.saldo)}</strong></div><div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Reserva</span><strong class="text-sm text-emerald-700">${formatBRL(c.reserva)}</strong></div><div class="bg-white/90 rounded-2xl p-2.5 border border-amber-200"><span class="text-[10px] font-bold text-slate-500 block">Bem-Estar</span><strong class="text-sm text-sky-700">${c.bemEstar ?? 80}%</strong></div></div></div>`;
             }
-
-            // Tabela de Ranking
-            document.getElementById('dash-ranking-tbody').innerHTML = list.map((g, i) => `
-                <tr class="${i === 0 ? 'bg-amber-50/50' : ''}">
-                    <td class="py-2.5 px-3 font-black">${i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : `${i + 1}º`))}</td>
-                    <td class="py-2.5 px-3 text-slate-900">${g.nome}</td>
-                    <td class="py-2.5 px-3 text-right tabular-nums ${(g.saldo||0)<0?'text-rose-600':'text-indigo-900'}">${formatBRL(g.saldo)}</td>
-                    <td class="py-2.5 px-3 text-right tabular-nums text-emerald-700">${formatBRL(g.reserva)}</td>
-                    <td class="py-2.5 px-3 text-center">${g.bemEstar ?? 80}%</td>
-                    <td class="py-2.5 px-3 text-center text-amber-700">${g.cidadania || 0} pts</td>
-                    <td class="py-2.5 px-3 text-right font-black text-indigo-700">${g.score} pts</td>
-                </tr>`).join('');
-
-            // Histórico Detalhado de Escolhas de Cada Equipe
+            document.getElementById('dash-ranking-tbody').innerHTML = list.map((g, i) => `<tr class="${i===0?'bg-amber-50/50':''}"><td class="py-2.5 px-3 font-black">${i===0?'🥇':(i===1?'🥈':(i===2?'🥉':`${i+1}º`))}</td><td class="py-2.5 px-3 text-slate-900">${g.nome}</td><td class="py-2.5 px-3 text-right tabular-nums ${(g.saldo||0)<0?'text-rose-600':'text-indigo-900'}">${formatBRL(g.saldo)}</td><td class="py-2.5 px-3 text-right tabular-nums text-emerald-700">${formatBRL(g.reserva)}</td><td class="py-2.5 px-3 text-center">${g.bemEstar ?? 80}%</td><td class="py-2.5 px-3 text-center text-amber-700">${g.cidadania || 0} pts</td><td class="py-2.5 px-3 text-right font-black text-indigo-700">${g.score} pts</td></tr>`).join('');
             document.getElementById('dash-histories-grid').innerHTML = list.map((g, i) => {
                 const histArr = g.historico ? Object.values(g.historico) : [];
-                return `
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 break-inside-avoid">
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-                            <div>
-                                <span class="text-xs font-extrabold uppercase text-indigo-600">${i + 1}º Lugar • ${g.score} pts</span>
-                                <h4 class="font-display text-lg font-bold text-slate-900">${g.nome}</h4>
-                            </div>
-                            <span class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700">✅ ${g.acertos || 0} acertos</span>
-                        </div>
-                        ${histArr.length ? `
-                            <ul class="space-y-2 text-xs">
-                                ${histArr.map(h => `
-                                    <li class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-start justify-between gap-2">
-                                        <div>
-                                            <span class="font-extrabold text-indigo-600">Mês ${h.fase || 1} • ${h.dia || ''}</span>
-                                            <strong class="block text-slate-800">${h.acao}</strong>
-                                        </div>
-                                        <span class="font-bold text-slate-600 text-right shrink-0">${h.detalhe || ''}</span>
-                                    </li>`).join('')}
-                            </ul>
-                        ` : '<p class="text-xs text-slate-400 font-semibold italic">Nenhuma escolha registrada ainda.</p>'}
-                    </div>`;
+                return `<div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 break-inside-avoid"><div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3"><div><span class="text-xs font-extrabold uppercase text-indigo-600">${i+1}º Lugar • ${g.score} pts</span><h4 class="font-display text-lg font-bold text-slate-900">${g.nome}</h4></div><span class="text-xs font-extrabold px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700">✅ ${g.acertos||0} acertos</span></div>${histArr.length ? `<ul class="space-y-2 text-xs">${histArr.map(h => `<li class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-start justify-between gap-2"><div><span class="font-extrabold text-indigo-600">Mês ${h.fase||1} • ${h.dia||''}</span><strong class="block text-slate-800">${h.acao}</strong></div><span class="font-bold text-slate-600 text-right shrink-0">${h.detalhe||''}</span></li>`).join('')}</ul>` : '<p class="text-xs text-slate-400 italic">Nenhuma escolha registrada.</p>'}</div>`;
             }).join('');
-
             document.getElementById('results-dashboard').classList.remove('hidden');
             launchConfetti();
         }
-
-        function closeResultsDashboard() {
-            document.getElementById('results-dashboard').classList.add('hidden');
-        }
-
+        function closeResultsDashboard() { document.getElementById('results-dashboard').classList.add('hidden'); }
         function exportClassCSV() {
             const rows = [['Equipe','Saldo','Reserva','Bem-Estar (%)','Cidadania (pts)','Acertos','Indice Final']];
             Object.values(Classroom.groups).forEach(g => rows.push([g.nome, g.saldo, g.reserva, g.bemEstar, g.cidadania, g.acertos||0, calcEquilibriumScore(g)]));
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([rows.map(r=>r.join(';')).join('\n')], { type:'text/csv;charset=utf-8;' }));
-            link.download = `relatorio_${Classroom.roomCode || 'turma'}.csv`;
-            link.click();
+            const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([rows.map(r=>r.join(';')).join('\n')], { type:'text/csv;charset=utf-8;' })); link.download = `relatorio_${Classroom.roomCode||'turma'}.csv`; link.click();
         }
 
         // =====================================================================
-        // 3. CONTROLE DO ALUNO (CORRIGIDO: SEM DUPLICATAS + NOME ÚNICO + HISTÓRICO)
+        // 5. CONTROLE DO ALUNO (CELULAR — TEXTOS CLAROS E COMPLETOS)
         // =====================================================================
-        let stuRoom = null, stuGid = null, stuGroupData = null, stuLastActId = null;
-        let stuCurPhase = 1, stuCurDay = 'Dia 01';
+        let stuRoom = null, stuGid = null, stuGroupData = null, stuLastActId = null, stuCurPhase = 1, stuCurDay = 'Dia 01';
 
         function initStudentMode(roomCode) {
             stuRoom = roomCode;
@@ -620,85 +761,46 @@
         }
 
         async function studentJoinRoom() {
-            const btn = document.getElementById('stu-join-btn');
-            const errEl = document.getElementById('stu-join-error');
+            const btn = document.getElementById('stu-join-btn'), errEl = document.getElementById('stu-join-error');
             const name = document.getElementById('stu-name-input').value.trim();
-
             errEl.classList.add('hidden');
-            if (!name) {
-                errEl.textContent = '⚠️ Digite o nome do seu grupo!';
-                errEl.classList.remove('hidden');
-                return;
-            }
-            if (btn.disabled) return; // Evita clique duplo!
-
-            btn.disabled = true;
-            btn.textContent = 'Verificando nome...';
-
+            if (!name) { errEl.textContent = '⚠️ Digite o nome do seu grupo!'; errEl.classList.remove('hidden'); return; }
+            if (btn.disabled) return;
+            btn.disabled = true; btn.textContent = 'Verificando...';
             try {
                 const snap = await db.ref(`salas/${stuRoom}/grupos`).once('value');
                 const existing = snap.val() || {};
-                const normalized = name.toLowerCase();
-                const alreadyExists = Object.values(existing).some(g => (g.nome || '').trim().toLowerCase() === normalized);
-
-                if (alreadyExists) {
-                    errEl.textContent = `⚠️ O nome "${name}" já está em uso nesta sala! Escolha outro nome.`;
-                    errEl.classList.remove('hidden');
-                    btn.disabled = false;
-                    btn.textContent = 'Entrar na Sala ▶';
-                    return;
+                if (Object.values(existing).some(g => (g.nome || '').trim().toLowerCase() === name.toLowerCase())) {
+                    errEl.textContent = `⚠️ O nome "${name}" já está em uso nesta sala! Escolha outro nome.`; errEl.classList.remove('hidden');
+                    btn.disabled = false; btn.textContent = 'Entrar na Sala ▶'; return;
                 }
-
                 stuGid = 'grp_' + Math.random().toString(36).slice(2, 8);
                 localStorage.setItem(`stu_gid_${stuRoom}`, stuGid);
-
-                await db.ref(`salas/${stuRoom}/grupos/${stuGid}`).set({
-                    nome: name, saldo: 200, reserva: 0, bemEstar: 80, cidadania: 0, acertos: 0, statusAtual: 'pendente'
-                });
+                await db.ref(`salas/${stuRoom}/grupos/${stuGid}`).set({ nome: name, saldo: 200, reserva: 0, bemEstar: 80, cidadania: 0, acertos: 0, statusAtual: 'pendente' });
                 connectStudentListeners();
-            } catch (e) {
-                errEl.textContent = 'Erro de conexão. Tente novamente.';
-                errEl.classList.remove('hidden');
-                btn.disabled = false;
-                btn.textContent = 'Entrar na Sala ▶';
-            }
+            } catch (e) { errEl.textContent = 'Erro de conexão.'; errEl.classList.remove('hidden'); btn.disabled = false; btn.textContent = 'Entrar na Sala ▶'; }
         }
 
         function updateStudentGroup(patch) { db.ref(`salas/${stuRoom}/grupos/${stuGid}`).update(patch); }
-        function logStudentHistory(acao, detalhe) {
-            if (!db || !stuRoom || !stuGid) return;
-            db.ref(`salas/${stuRoom}/grupos/${stuGid}/historico`).push({ fase: stuCurPhase, dia: stuCurDay, acao, detalhe });
-        }
+        function logStudentHistory(acao, detalhe) { if (db && stuRoom && stuGid) db.ref(`salas/${stuRoom}/grupos/${stuGid}/historico`).push({ fase: stuCurPhase, dia: stuCurDay, acao, detalhe }); }
 
         function connectStudentListeners() {
             document.getElementById('stu-join-view').classList.add('hidden');
             document.getElementById('stu-controller-view').classList.remove('hidden');
-
             db.ref(`salas/${stuRoom}/grupos/${stuGid}`).on('value', (snap) => {
-                const g = snap.val();
-                if (!g) return;
+                const g = snap.val(); if (!g) return;
                 stuGroupData = g;
                 document.getElementById('stu-group-title').textContent = g.nome;
-                const sEl = document.getElementById('stu-saldo');
-                sEl.textContent = formatBRL(g.saldo);
-                sEl.className = `text-base font-black tabular-nums ${g.saldo < 0 ? 'text-rose-600' : 'text-indigo-950'}`;
+                const sEl = document.getElementById('stu-saldo'); sEl.textContent = formatBRL(g.saldo); sEl.className = `text-base font-black tabular-nums ${g.saldo < 0 ? 'text-rose-600' : 'text-indigo-950'}`;
                 document.getElementById('stu-reserva').textContent = formatBRL(g.reserva);
                 document.getElementById('stu-bemestar').textContent = `${g.bemEstar}%`;
                 document.getElementById('stu-cidadania').textContent = `${g.cidadania} pts`;
             });
-
             db.ref(`salas/${stuRoom}/atividadeAtual`).on('value', (snap) => {
-                const act = snap.val();
-                const area = document.getElementById('stu-action-area');
-                if (!act) {
-                    stuLastActId = null;
-                    area.innerHTML = `<div class="text-center text-slate-500 font-bold py-6"><span class="text-4xl block mb-2">👀</span>Acompanhe a história da Família Silva no telão!</div>`;
-                    return;
-                }
+                const act = snap.val(), area = document.getElementById('stu-action-area');
+                if (!act) { stuLastActId = null; area.innerHTML = `<div class="text-center text-slate-500 font-bold py-6"><span class="text-4xl block mb-2">👀</span>Acompanhe a história da Família Silva no telão!</div>`; return; }
                 if (act.id === stuLastActId) return;
-                stuLastActId = act.id;
-                stuCurPhase = act.phase || 1;
-                stuCurDay = act.dayLabel || '';
+                stuLastActId = act.id; stuCurPhase = act.phase || 1; stuCurDay = act.dayLabel || '';
                 renderStudentActivity(act);
             });
         }
@@ -706,70 +808,114 @@
         function renderStudentActivity(act) {
             const area = document.getElementById('stu-action-area');
 
-            if (act.type === 'mcq') {
+            if (act.type === 'day05_reserve') {
+                const curBal = stuGroupData ? stuGroupData.saldo : 200;
+                const totalWithSal = Math.round((curBal + 4200) * 100) / 100;
+                const calcBase = totalWithSal > 0 ? totalWithSal : 4200;
+                const res15 = Math.round(calcBase * 0.15 * 100) / 100;
+                const opts = generateMoneyOptions(res15, [Math.round(calcBase*0.10), Math.round(calcBase*0.20), res15 + 35]);
+                const correct = opts.find(o => o.isCorrect).letter;
+                area.innerHTML = `
+                    <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 mb-2">🛡️ Dia 05 • Regra "Pague-se Primeiro"</span>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 text-xs text-emerald-950 font-semibold mb-2.5 leading-relaxed">
+                        💡 <strong>Por que guardar 15% logo no Dia 05?</strong> Separar uma parte do dinheiro antes de gastar cria uma <strong>Reserva de Emergência</strong> para proteger a família de imprevistos sem recorrer a juros altos.
+                    </div>
+                    <p class="text-xs text-slate-700 font-semibold mb-2 leading-relaxed">
+                        O saldo atual do seu grupo (<strong>${formatBRL(curBal)}</strong>) somado aos salários do mês (<strong>R$ 4.200,00</strong>) resulta em <strong class="text-indigo-700">${formatBRL(totalWithSal)}</strong> disponíveis na conta.
+                    </p>
+                    <p class="text-sm font-extrabold text-slate-900 mb-3">❓ Calculando 15% sobre ${formatBRL(calcBase)}, qual valor deve ser transferido agora para a Reserva de Emergência?</p>
+                    <div class="grid grid-cols-1 gap-2">
+                        ${opts.map(o => `<button onclick="stuFinishDay05('${o.letter}','${correct}',${res15})" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}
+                    </div>`;
+            }
+            else if (act.type === 'mcq') {
                 window._stuMcqTitle = act.title;
                 area.innerHTML = `
                     <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 mb-2">${act.badge || 'Desafio'}</span>
                     <h3 class="font-display font-bold text-base text-slate-900 mb-1.5">${act.title}</h3>
-                    <p class="text-xs text-slate-600 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-200 mb-2.5">${act.context || ''}</p>
-                    <p class="text-sm font-extrabold text-slate-900 mb-3">❓ ${act.question}</p>
-                    <div class="grid grid-cols-1 gap-2">
-                        ${act.options.map(o => `<button onclick="stuAnswerMCQ('${o.key}','${act.correctKey}',${act.points || 15})" class="w-full p-3 rounded-xl bg-indigo-50 hover:bg-indigo-600 hover:text-white border-2 border-indigo-200 font-extrabold text-left text-xs sm:text-sm transition"><strong>${o.key})</strong> ${o.label}</button>`).join('')}
-                    </div>`;
-            } else if (act.type === 'lifestyle') {
+                    <p class="text-xs text-slate-700 font-semibold bg-slate-50 p-3 rounded-xl border border-slate-200 mb-3 leading-relaxed">${act.context || ''}</p>
+                    <p class="text-sm font-extrabold text-slate-900 mb-3 leading-snug">❓ ${act.question}</p>
+                    <div class="grid grid-cols-1 gap-2">${act.options.map(o => `<button onclick="stuAnswerMCQ('${o.key}','${act.correctKey}',${act.points||15})" class="w-full p-3 rounded-xl bg-indigo-50 hover:bg-indigo-600 hover:text-white border-2 border-indigo-200 font-extrabold text-left text-xs sm:text-sm transition"><strong>${o.key})</strong> ${o.label}</button>`).join('')}</div>`;
+            }
+            else if (act.type === 'lifestyle') {
                 area.innerHTML = `
-                    <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 mb-2">⚖️ Dia 10 • Escolha do Grupo</span>
-                    <h3 class="font-display font-bold text-lg text-slate-900 mb-2">Como ajustar os Gastos Variáveis?</h3>
+                    <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800 mb-2">⚖️ Dia 10 • Consumo Consciente</span>
+                    <h3 class="font-display font-bold text-lg text-slate-900 mb-1">Como a família vai conduzir os Gastos Variáveis?</h3>
+                    <p class="text-xs text-slate-600 font-semibold mb-3">Pensem no equilíbrio entre economizar dinheiro e manter a qualidade de vida da família:</p>
                     <div class="space-y-2.5">
-                        <button onclick="stuPickLifestyle('Manter Padrão',0,5,0)" class="w-full text-left p-3.5 rounded-2xl bg-slate-50 border-2 border-slate-200"><strong>🍕 Manter Padrão</strong><span class="block text-xs text-slate-600">Economia R$ 0 • +5% Bem-Estar</span></button>
-                        <button onclick="stuPickLifestyle('Plano Equilibrado',150,5,15)" class="w-full text-left p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300"><strong>🥗 Plano Equilibrado</strong><span class="block text-xs text-emerald-800">+R$ 150,00 • +5% Bem-Estar • +15 pts</span></button>
-                        <button onclick="stuPickLifestyle('Corte Radical',280,-15,0)" class="w-full text-left p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300"><strong>✂️ Corte Radical</strong><span class="block text-xs text-amber-900">+R$ 280,00 • −15% Bem-Estar</span></button>
+                        <button onclick="stuPickLifestyle('Manter Padrão',0,5,0)" class="w-full text-left p-3.5 rounded-2xl bg-slate-50 border-2 border-slate-200"><strong>🍕 Manter Padrão Atual</strong><span class="block text-xs text-slate-600 mt-0.5">Continua com os mesmos passeios e delivery. Economia: R$ 0 • +5% Bem-Estar</span></button>
+                        <button onclick="stuPickLifestyle('Plano Equilibrado',150,5,15)" class="w-full text-left p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300"><strong>🥗 Plano Equilibrado</strong><span class="block text-xs text-emerald-800 mt-0.5">Usa lista de compras e faz lazer gratuito no parque. +R$ 150,00 • +5% Bem-Estar • +15 pts</span></button>
+                        <button onclick="stuPickLifestyle('Corte Radical',280,-15,0)" class="w-full text-left p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300"><strong>✂️ Corte Radical</strong><span class="block text-xs text-amber-900 mt-0.5">Corta todo o lazer e passeios do mês para poupar ao máximo. +R$ 280,00 • −15% Bem-Estar</span></button>
                     </div>`;
-            } else if (act.type === 'card_pick') {
+            }
+            else if (act.type === 'card_pick') {
                 window._stuHand = act.cards;
                 area.innerHTML = `
-                    <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 mb-2">🃏 Dia ${act.day} • Escolha sua Carta</span>
-                    <h3 class="font-display font-bold text-lg text-slate-900 mb-3">Toque em 1 Carta Surpresa:</h3>
-                    <div class="grid grid-cols-2 gap-2.5">
-                        ${act.cards.map((c, i) => `<button onclick="stuFlipCard(${i})" class="h-28 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white font-display font-bold flex flex-col items-center justify-center shadow-md"><span class="text-3xl mb-1">🎴</span><span>Carta #${i + 1}</span></button>`).join('')}
-                    </div>`;
-            } else if (act.type === 'energy_habits') {
+                    <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 mb-2">🃏 Dia ${act.day} • Imprevisto ou Oportunidade</span>
+                    <h3 class="font-display font-bold text-lg text-slate-900 mb-1">Escolha 1 Carta Surpresa</h3>
+                    <p class="text-xs text-slate-600 font-semibold mb-3">Cada carta esconde uma situação financeira diferente para o seu grupo calcular:</p>
+                    <div class="grid grid-cols-2 gap-2.5">${act.cards.map((c, i) => `<button onclick="stuFlipCard(${i})" class="h-28 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white font-display font-bold flex flex-col items-center justify-center shadow-md"><span class="text-3xl mb-1">🎴</span><span>Carta #${i+1}</span></button>`).join('')}</div>`;
+            }
+            else if (act.type === 'energy_habits') {
                 window._stuHabits = act.habits; window._stuTariff = act.tariff; window._stuSelHabits = new Set();
                 renderStuHabits();
-            } else if (act.type === 'investment') {
+            }
+            else if (act.type === 'investment') {
                 const bal = stuGroupData ? stuGroupData.saldo : 200;
                 if (bal <= 0) {
-                    const debt = Math.abs(bal), disc = Math.round(debt * 0.2 * 100) / 100, newD = Math.round((debt - disc) * 100) / 100;
-                    const opts = generateMoneyOptions(newD, [disc, debt, debt + 20]), correct = opts.find(o => o.isCorrect).letter;
+                    const debt = Math.abs(bal), disc = Math.round(debt*0.2*100)/100, newD = Math.round((debt-disc)*100)/100;
+                    const opts = generateMoneyOptions(newD,[disc,debt,debt+20]), correct = opts.find(o=>o.isCorrect).letter;
                     area.innerHTML = `
-                        <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 mb-2">🚨 Dia 28 • Renegociação</span>
-                        <h3 class="font-display font-bold text-base mb-2">Saldo negativo em ${formatBRL(debt)}</h3>
-                        <p class="text-xs bg-rose-50 p-2.5 rounded-xl mb-3">Com <strong>20% de abatimento</strong>, qual o valor restante da dívida?</p>
+                        <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 mb-2">🚨 Dia 28 • Renegociação de Dívida</span>
+                        <h3 class="font-display font-bold text-base mb-2">Sua conta está negativa em ${formatBRL(debt)}</h3>
+                        <p class="text-xs bg-rose-50 p-3 rounded-xl mb-3 leading-relaxed">Para evitar que os juros virem uma bola de neve, a família negociou com o banco e conseguiu um <strong>desconto de 20%</strong> sobre a dívida atual de <strong>${formatBRL(debt)}</strong>.</p>
+                        <p class="text-sm font-extrabold text-slate-900 mb-3">❓ Descontando 20% de ${formatBRL(debt)}, qual será o valor restante da dívida?</p>
                         <div class="grid grid-cols-1 gap-2">${opts.map(o => `<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${disc},15,'Renegociação de Dívida')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
                 } else {
-                    window._stuInvMods = [
-                        { icon:'🏦', name:'Poupança (+0,5% a.m.)', rate:0.005 },
-                        { icon:'📜', name:'Tesouro Selic (+1% a.m.)', rate:0.01 },
-                        { icon:'🏢', name:'FIIs (+2% ou -1%)', rate:Math.random()>=0.4?0.02:-0.01 },
-                        { icon:'📈', name:'Bolsa (+5% ou -3%)', rate:Math.random()>=0.45?0.05:-0.03 }
-                    ];
                     area.innerHTML = `
-                        <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 mb-2">📈 Dia 28 • Investimento</span>
-                        <h3 class="font-display font-bold text-base mb-2">Onde investir seus ${formatBRL(bal)}?</h3>
-                        <div class="grid grid-cols-1 gap-2">${window._stuInvMods.map((m, i) => `<button onclick="stuPickInv(${i})" class="w-full text-left p-3.5 rounded-2xl bg-slate-50 border-2 border-slate-200 font-extrabold text-sm">${m.icon} ${m.name}</button>`).join('')}</div>`;
+                        <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 mb-2">📈 Dia 28 • Investindo o Saldo</span>
+                        <h3 class="font-display font-bold text-base mb-1">Onde investir seus ${formatBRL(bal)}?</h3>
+                        <p class="text-xs text-slate-600 font-semibold mb-3">Toque em uma modalidade abaixo para ler o que ela é, seus benefícios e riscos antes de decidir:</p>
+                        <div class="grid grid-cols-1 gap-2">${INVESTMENT_CATALOG.map((m, i) => `<button onclick="openInvInfoModal(${i}, (inv) => stuStartInvMath(inv))" class="w-full text-left p-3.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 font-extrabold text-sm flex items-center justify-between"><span>${m.icon} ${m.name}</span><span class="text-xs text-indigo-600">Ler ℹ️</span></button>`).join('')}</div>`;
                 }
             }
         }
 
+        function stuFinishDay05(chosen, correct, res15) {
+            const ok = chosen === correct;
+            updateStudentGroup({
+                saldo: Math.round(((stuGroupData.saldo || 0) + 4200 - res15) * 100) / 100,
+                reserva: Math.round(((stuGroupData.reserva || 0) + res15) * 100) / 100,
+                cidadania: (stuGroupData.cidadania || 0) + (ok ? 15 : 0),
+                acertos: (stuGroupData.acertos || 0) + (ok ? 1 : 0),
+                statusAtual: `Reserva ${formatBRL(res15)}`
+            });
+            logStudentHistory('Reserva de Emergência (15%)', `Guardou ${formatBRL(res15)} (${ok ? 'Acertou' : 'Errou cálculo'})`);
+            document.getElementById('stu-action-area').innerHTML = `<div class="text-center py-5"><span class="text-5xl block mb-2">${ok?'🛡️':'💡'}</span><h3 class="font-display font-bold text-lg">${ok?'Cálculo Exato!':`Resposta certa: ${correct}`}</h3><p class="text-xs font-bold text-emerald-700 mt-1">${formatBRL(res15)} transferidos para sua Reserva!</p></div>`;
+        }
+
+        function stuStartInvMath(inv) {
+            const cap = stuGroupData.saldo, rate = inv.getRate();
+            const delta = Math.round(cap * rate * 100) / 100, upd = Math.round((cap + delta) * 100) / 100;
+            const pct = `${rate>0?'+':''}${(rate*100).toFixed(1).replace('.0','').replace('.',',')}%`;
+            const opts = generateMoneyOptions(upd,[cap-delta, cap*1.03]), correct = opts.find(o=>o.isCorrect).letter;
+            const actionWord = rate >= 0 ? 'rendeu (aumentou)' : 'caiu (sofreu queda de)';
+            document.getElementById('stu-action-area').innerHTML = `
+                <h3 class="font-display font-bold text-base mb-2">${inv.icon} ${inv.name}</h3>
+                <p class="text-xs bg-indigo-50 p-3 rounded-xl mb-3 leading-relaxed">Seu grupo aplicou <strong>${formatBRL(cap)}</strong>. Neste mês, o investimento <strong>${actionWord} ${pct}</strong>.</p>
+                <p class="text-sm font-extrabold text-slate-900 mb-3">❓ Aplicando essa variação de ${pct} sobre ${formatBRL(cap)}, qual será o novo saldo atualizado do grupo?</p>
+                <div class="grid grid-cols-1 gap-2">${opts.map(o=>`<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${delta},20,'Investiu: ${inv.name} (${pct})')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
+        }
+
         function stuAnswerMCQ(chosen, correct, pts) {
             const ok = chosen === correct;
-            updateStudentGroup({ cidadania: (stuGroupData.cidadania||0)+(ok?pts:0), acertos: (stuGroupData.acertos||0)+(ok?1:0), statusAtual: ok?`Acertou (${chosen})`:`Marcou ${chosen}` });
-            logStudentHistory(window._stuMcqTitle || 'Desafio Matemático', ok ? `Acertou (${chosen}) +${pts} pts` : `Errou (marcou ${chosen})`);
+            updateStudentGroup({ cidadania:(stuGroupData.cidadania||0)+(ok?pts:0), acertos:(stuGroupData.acertos||0)+(ok?1:0), statusAtual:ok?`Acertou (${chosen})`:`Marcou ${chosen}` });
+            logStudentHistory(window._stuMcqTitle || 'Desafio', ok ? `Acertou (${chosen}) +${pts} pts` : `Errou (marcou ${chosen})`);
             document.getElementById('stu-action-area').innerHTML = `<div class="text-center py-5"><span class="text-5xl block mb-2">${ok?'✅':'💡'}</span><h3 class="font-display font-bold text-lg">${ok?`Acertou! (+${pts} pts)`:`Você marcou ${chosen}`}</h3></div>`;
         }
 
         function stuPickLifestyle(label, saved, wb, pts) {
-            updateStudentGroup({ saldo: Math.round(((stuGroupData.saldo||0)+saved)*100)/100, bemEstar: Math.max(0,Math.min(100,(stuGroupData.bemEstar??80)+wb)), cidadania: (stuGroupData.cidadania||0)+pts, statusAtual: label });
+            updateStudentGroup({ saldo:Math.round(((stuGroupData.saldo||0)+saved)*100)/100, bemEstar:Math.max(0,Math.min(100,(stuGroupData.bemEstar??80)+wb)), cidadania:(stuGroupData.cidadania||0)+pts, statusAtual:label });
             logStudentHistory(`Padrão de Vida: ${label}`, `${saved>0?'+'+formatBRL(saved):'R$ 0'} | Bem-Estar ${wb>=0?'+':''}${wb}%`);
             document.getElementById('stu-action-area').innerHTML = `<div class="text-center py-5 text-emerald-800 font-bold"><span class="text-4xl block mb-2">⚖️</span>Escolha registrada: <strong>${label}</strong>!</div>`;
         }
@@ -778,48 +924,39 @@
             const c = window._stuHand[idx], opts = generateMoneyOptions(Math.abs(c.delta)), correct = opts.find(o=>o.isCorrect).letter;
             document.getElementById('stu-action-area').innerHTML = `
                 <span class="inline-block text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${c.category==='beneficio'?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'} mb-2">${c.icon} ${c.title}</span>
-                <p class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border mb-2.5">${c.desc}</p>
-                <p class="text-sm font-extrabold mb-3">❓ ${c.question}</p>
+                <p class="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border mb-3 leading-relaxed">${c.desc}</p>
+                <p class="text-sm font-extrabold text-slate-900 mb-3 leading-snug">❓ ${c.question}</p>
                 <div class="grid grid-cols-1 gap-2">${opts.map(o => `<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${c.delta},15,'Carta: ${c.title}')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
         }
 
         function renderStuHabits() {
             const sel = window._stuSelHabits, tot = window._stuHabits.filter(h=>sel.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0);
             document.getElementById('stu-action-area').innerHTML = `
-                <h3 class="font-display font-bold text-base mb-2">🌱 Escolha 3 Hábitos (${sel.size}/3)</h3>
+                <h3 class="font-display font-bold text-base mb-1">🌱 Escolha 3 Hábitos (${sel.size}/3)</h3>
+                <p class="text-xs text-slate-600 font-semibold mb-2.5">Selecione 3 ações para reduzir o consumo de energia da casa:</p>
                 <div class="space-y-1.5 mb-3">${window._stuHabits.map(h=>`<button onclick="stuToggleHabit('${h.id}')" class="w-full text-left p-2.5 rounded-xl border-2 text-xs font-extrabold flex justify-between ${sel.has(h.id)?'bg-emerald-50 border-emerald-500':'bg-white'}"><span>${h.icon} ${h.title}</span><span>−${h.kwhSaved} kWh</span></button>`).join('')}</div>
                 <button onclick="stuConfirmHabits()" ${sel.size!==3?'disabled':''} class="w-full py-3 rounded-xl font-extrabold text-sm ${sel.size===3?'bg-emerald-600 text-white':'bg-slate-200 text-slate-400'}">Calcular Economia (${tot} kWh) ▶</button>`;
         }
         function stuToggleHabit(id) { if (window._stuSelHabits.has(id)) window._stuSelHabits.delete(id); else if (window._stuSelHabits.size<3) window._stuSelHabits.add(id); renderStuHabits(); }
         function stuConfirmHabits() {
-            const chosen = window._stuHabits.filter(h=>window._stuSelHabits.has(h.id));
-            const kwh = chosen.reduce((a,h)=>a+h.kwhSaved,0), saved = Math.round(kwh*window._stuTariff*100)/100;
+            const kwh = window._stuHabits.filter(h=>window._stuSelHabits.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0), saved = Math.round(kwh*window._stuTariff*100)/100;
             const opts = generateMoneyOptions(saved,[saved+15,kwh]), correct = opts.find(o=>o.isCorrect).letter;
             document.getElementById('stu-action-area').innerHTML = `
-                <h3 class="font-display font-bold text-base mb-2">⚡ Calcule sua Economia</h3>
-                <p class="text-xs bg-emerald-50 p-2.5 rounded-xl mb-3">Corte: <strong>${kwh} kWh</strong> × ${formatBRL(window._stuTariff)}/kWh. Quanto economizaram?</p>
+                <h3 class="font-display font-bold text-base mb-2">⚡ Calcule sua Economia na Conta de Luz</h3>
+                <p class="text-xs bg-emerald-50 p-3 rounded-xl mb-3 leading-relaxed">Com os 3 hábitos escolhidos, a família deixou de gastar <strong>${kwh} kWh</strong> neste mês. Na bandeira tarifária atual, cada kWh custa <strong>${formatBRL(window._stuTariff)}</strong>.</p>
+                <p class="text-sm font-extrabold text-slate-900 mb-3">❓ Multiplicando ${kwh} kWh por ${formatBRL(window._stuTariff)}, quantos reais a família economizou?</p>
                 <div class="grid grid-cols-1 gap-2">${opts.map(o=>`<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${saved},20,'Energia (-${kwh} kWh)')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
-        }
-
-        function stuPickInv(idx) {
-            const m = window._stuInvMods[idx], cap = stuGroupData.saldo, delta = Math.round(cap*m.rate*100)/100, upd = Math.round((cap+delta)*100)/100;
-            const pct = `${m.rate>0?'+':''}${(m.rate*100).toFixed(1).replace('.0','').replace('.',',')}%`;
-            const opts = generateMoneyOptions(upd,[cap-delta, cap*1.03]), correct = opts.find(o=>o.isCorrect).letter;
-            document.getElementById('stu-action-area').innerHTML = `
-                <h3 class="font-display font-bold text-base mb-2">${m.icon} ${m.name}</h3>
-                <p class="text-xs bg-indigo-50 p-2.5 rounded-xl mb-3">Capital: <strong>${formatBRL(cap)}</strong> • Variação: <strong>${pct}</strong>. Novo valor?</p>
-                <div class="grid grid-cols-1 gap-2">${opts.map(o=>`<button onclick="stuAnswerDynamic('${o.letter}','${correct}',${delta},20,'Investiu: ${m.name}')" class="w-full p-3 rounded-xl bg-indigo-50 border-2 border-indigo-200 font-extrabold text-left text-sm"><strong>${o.letter})</strong> ${o.label}</button>`).join('')}</div>`;
         }
 
         function stuAnswerDynamic(chosen, correct, saldoDelta, pts, label) {
             const ok = chosen === correct;
-            updateStudentGroup({ saldo: Math.round(((stuGroupData.saldo||0)+saldoDelta)*100)/100, cidadania: (stuGroupData.cidadania||0)+(ok?pts:5), acertos: (stuGroupData.acertos||0)+(ok?1:0), statusAtual: label });
+            updateStudentGroup({ saldo:Math.round(((stuGroupData.saldo||0)+saldoDelta)*100)/100, cidadania:(stuGroupData.cidadania||0)+(ok?pts:5), acertos:(stuGroupData.acertos||0)+(ok?1:0), statusAtual:label });
             logStudentHistory(label, `${saldoDelta>=0?'+':''}${formatBRL(saldoDelta)} (${ok?'Cálculo exato':'Errou cálculo'})`);
-            document.getElementById('stu-action-area').innerHTML = `<div class="text-center py-5"><span class="text-5xl block mb-2">${ok?'✅':'💡'}</span><h3 class="font-display font-bold text-lg">${ok?'Cálculo Exato!':`Resposta certa: ${correct}`}</h3><p class="text-xs font-bold mt-1">Saldo: <strong>${saldoDelta>=0?'+':''}${formatBRL(saldoDelta)}</strong></p></div>`;
+            document.getElementById('stu-action-area').innerHTML = `<div class="text-center py-5"><span class="text-5xl block mb-2">${ok?'✅':'💡'}</span><h3 class="font-display font-bold text-lg">${ok?'Cálculo Exato!':`Resposta certa: ${correct}`}</h3><p class="text-xs font-bold mt-1">Impacto no saldo: <strong>${saldoDelta>=0?'+':''}${formatBRL(saldoDelta)}</strong></p></div>`;
         }
 
         // =====================================================================
-        // 4. JOGO PRINCIPAL (TELÃO, PERSONAGENS, FASES E VISUAL NOVEL)
+        // 6. JOGO PRINCIPAL (TELÃO, PERSONAGENS E ENUNCIADOS COMPLETOS)
         // =====================================================================
         const SoundFX = { enabled:true, ctx:null, play(t){ if(!this.enabled)return; try{ if(!this.ctx)this.ctx=new(window.AudioContext||window.webkitAudioContext)(); if(this.ctx.state==='suspended')this.ctx.resume(); const n=this.ctx.currentTime,o=this.ctx.createOscillator(),g=this.ctx.createGain(); o.connect(g); g.connect(this.ctx.destination); o.type=t==='error'?'sawtooth':'triangle'; o.frequency.setValueAtTime(t==='success'?660:(t==='error'?200:520),n); g.gain.setValueAtTime(0.08,n); g.gain.exponentialRampToValueAtTime(0.001,n+0.15); o.start(n); o.stop(n+0.15); }catch(_){} } };
         function toggleSound(){ SoundFX.enabled=!SoundFX.enabled; document.getElementById('btn-sound-toggle').textContent=SoundFX.enabled?'🔊':'🔇'; }
@@ -828,8 +965,8 @@
 
         const FAMILY = {
             ana:{id:'ana',name:'Ana Silva',role:'Mãe • Planejamento',badgeClass:'bg-teal-100 text-teal-800',quote:'Separar 15% logo no Dia 05 constrói nossa Reserva!'},
-            carlos:{id:'carlos',name:'Carlos Silva',role:'Pai • Controle de Contas',badgeClass:'bg-blue-100 text-blue-800',quote:'Equilibrar gastos variáveis protege o bolso e o bem-estar!'},
-            lucas:{id:'lucas',name:'Lucas Silva',role:'Filho (14) • Investimentos',badgeClass:'bg-indigo-100 text-indigo-800',quote:'Investir com consciência vence a inflação!'},
+            carlos:{id:'carlos',name:'Carlos Silva',role:'Pai • Controle de Contas',badgeClass:'bg-blue-100 text-blue-800',quote:'Os gastos variáveis mudam todo mês — atenção redobrada!'},
+            lucas:{id:'lucas',name:'Lucas Silva',role:'Filho (14) • Investimentos',badgeClass:'bg-indigo-100 text-indigo-800',quote:'Leia os riscos e benefícios antes de investir!'},
             maya:{id:'maya',name:'Maya Silva',role:'Filha (10) • Consumo Consciente',badgeClass:'bg-amber-100 text-amber-800',quote:'Pedir CPF na Nota ajuda o planeta e nosso bolso!'}
         };
 
@@ -842,30 +979,22 @@
         }
 
         const PHASE_CONFIGS = [
-            { phase:1, monthName:'Mês 1', difficultyLabel:'Nível 1 • Base', badgeBg:'bg-sky-900', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1150,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:180,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:320,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:950,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:240,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:110,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:280,type:'variavel'},{id:'e8',icon:'📚',name:'Material Escolar',amount:170,type:'fixo'}], healthEvent:{title:'Dia 18: Saúde & Genérico + CPF na Nota', itemDesc:'O tratamento custa R$ 180,00. Com genérico e CPF na Nota há 35% de desconto.', fullPrice:180, discountPct:35, ledgerDesc:'Medicamentos Maya'}, energyConfig:{tariff:0.80, bandeira:'Bandeira Verde'} },
-            { phase:2, monthName:'Mês 2', difficultyLabel:'Nível 2 • Reajuste', badgeBg:'bg-indigo-950', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1220,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:190,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:350,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1040,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:260,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:120,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:310,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:190,type:'fixo'}], healthEvent:{title:'Dia 18: Exame Preventivo + CPF na Nota', itemDesc:'O exame custa R$ 220,00. Com rede parceira e CPF na Nota há 30% de desconto.', fullPrice:220, discountPct:30, ledgerDesc:'Exame Lucas'}, energyConfig:{tariff:0.85, bandeira:'Bandeira Amarela'} },
-            { phase:3, monthName:'Mês 3', difficultyLabel:'Nível 3 • Pressão', badgeBg:'bg-amber-900', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1280,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:200,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:380,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1120,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:290,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:130,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:320,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:200,type:'fixo'}], healthEvent:{title:'Dia 18: Óculos Ana + Nota Cidadã', itemDesc:'As lentes custam R$ 260,00. Com pesquisa e nota fiscal há 25% de desconto.', fullPrice:260, discountPct:25, ledgerDesc:'Óculos Ana'}, energyConfig:{tariff:0.90, bandeira:'Bandeira Vermelha P1'} },
-            { phase:4, monthName:'Mês 4', difficultyLabel:'Nível 4 • Crise', badgeBg:'bg-rose-950', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1320,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:210,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:410,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1180,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:320,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:140,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:310,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:210,type:'fixo'}], healthEvent:{title:'Dia 18: Dentista Carlos + Nota Cidadã', itemDesc:'O procedimento custa R$ 320,00. Com desconto preventivo há 25% OFF.', fullPrice:320, discountPct:25, ledgerDesc:'Dentista Carlos'}, energyConfig:{tariff:1.00, bandeira:'Bandeira Vermelha P2'} }
+            { phase:1, monthName:'Mês 1', difficultyLabel:'Nível 1 • Base', badgeBg:'bg-sky-900', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1150,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:180,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:320,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:950,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:240,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:110,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:280,type:'variavel'},{id:'e8',icon:'📚',name:'Material Escolar',amount:170,type:'fixo'}], healthEvent:{title:'Dia 18: Saúde & Genérico + CPF na Nota', itemDesc:'Maya precisou de medicamentos. O remédio de marca custa R$ 180,00, mas optando pelo genérico e pedindo CPF na Nota Fiscal Cidadã, a farmácia concedeu 35% de desconto.', fullPrice:180, discountPct:35, ledgerDesc:'Medicamentos Maya'}, energyConfig:{tariff:0.80, bandeira:'Bandeira Verde'} },
+            { phase:2, monthName:'Mês 2', difficultyLabel:'Nível 2 • Reajuste', badgeBg:'bg-indigo-950', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1220,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:190,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:350,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1040,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:260,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:120,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:310,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:190,type:'fixo'}], healthEvent:{title:'Dia 18: Exame Preventivo + CPF na Nota', itemDesc:'Lucas precisou fazer um exame preventivo de rotina. O valor particular é R$ 220,00, mas usando a rede parceira e exigindo CPF na Nota, a família conseguiu 30% de desconto.', fullPrice:220, discountPct:30, ledgerDesc:'Exame Lucas'}, energyConfig:{tariff:0.85, bandeira:'Bandeira Amarela'} },
+            { phase:3, monthName:'Mês 3', difficultyLabel:'Nível 3 • Pressão', badgeBg:'bg-amber-900', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1280,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:200,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:380,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1120,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:290,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:130,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:320,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:200,type:'fixo'}], healthEvent:{title:'Dia 18: Óculos de Grau da Ana + Nota Cidadã', itemDesc:'Ana precisou trocar as lentes dos óculos. O orçamento inicial foi de R$ 260,00, mas pesquisando em três óticas e pedindo nota fiscal ela garantiu 25% de desconto.', fullPrice:260, discountPct:25, ledgerDesc:'Óculos Ana'}, energyConfig:{tariff:0.90, bandeira:'Bandeira Vermelha P1'} },
+            { phase:4, monthName:'Mês 4', difficultyLabel:'Nível 4 • Crise', badgeBg:'bg-rose-950', expenses:[{id:'e1',icon:'🏠',name:'Aluguel',amount:1320,type:'fixo'},{id:'e2',icon:'📶',name:'Internet/Celular',amount:210,type:'fixo'},{id:'e3',icon:'🚌',name:'Transporte',amount:410,type:'variavel'},{id:'e4',icon:'🛒',name:'Supermercado',amount:1180,type:'variavel'},{id:'e5',icon:'💡',name:'Conta de Luz',amount:320,type:'variavel'},{id:'e6',icon:'🚰',name:'Conta de Água',amount:140,type:'variavel'},{id:'e7',icon:'🍕',name:'Lazer/Delivery',amount:310,type:'variavel'},{id:'e8',icon:'📚',name:'Curso/Material',amount:210,type:'fixo'}], healthEvent:{title:'Dia 18: Tratamento Dentário do Carlos + Nota Cidadã', itemDesc:'Carlos teve uma emergência odontológica que custaria R$ 320,00. Pelo programa preventivo e com emissão de nota fiscal cidadã, o consultório deu 25% de desconto.', fullPrice:320, discountPct:25, ledgerDesc:'Dentista Carlos'}, energyConfig:{tariff:1.00, bandeira:'Bandeira Vermelha P2'} }
         ];
 
-        const GameState = { teamName:'', isDemoMode:false, phaseIndex:0, milestoneIndex:0, dialogueIndex:0, balance:200, reserveBalance:0, wellbeing:80, fiscalPoints:0, day05Credited:false, timerSeconds:0, timerInterval:null, ledger:[], decisions:{ classifiedIds:[] } };
+        const GameState = { teamName:'', isDemoMode:false, phaseIndex:0, phaseStartBalance:200, milestoneIndex:0, dialogueIndex:0, balance:200, reserveBalance:0, wellbeing:80, fiscalPoints:0, day05Credited:false, timerSeconds:0, timerInterval:null, ledger:[], currentExpenses:[], decisions:{ classifiedIds:[] } };
         function getCurrentPhaseConfig(){ return PHASE_CONFIGS[GameState.phaseIndex] || PHASE_CONFIGS[0]; }
-        function resetPhaseDecisions(){ GameState.day05Credited=false; GameState.decisions={classifiedIds:[]}; }
-        function resetGameState(demo){ GameState.isDemoMode=demo; GameState.phaseIndex=0; GameState.milestoneIndex=0; GameState.dialogueIndex=0; GameState.balance=200; GameState.reserveBalance=0; GameState.wellbeing=80; GameState.fiscalPoints=0; GameState.timerSeconds=0; GameState.ledger=[{phase:1,day:'Dia 01',desc:'Saldo inicial',amount:200}]; resetPhaseDecisions(); }
+        function buildDynamicMonthExpenses() {
+            const cfg = getCurrentPhaseConfig(), offsets = [-30, -15, 0, 15, 30, 45];
+            GameState.currentExpenses = cfg.expenses.map(e => e.type === 'variavel' ? { ...e, amount: Math.max(80, e.amount + offsets[Math.floor(Math.random()*offsets.length)]) } : { ...e });
+        }
+        function resetPhaseDecisions(){ GameState.day05Credited=false; GameState.decisions={classifiedIds:[]}; buildDynamicMonthExpenses(); }
+        function resetGameState(demo){ GameState.isDemoMode=demo; GameState.phaseIndex=0; GameState.phaseStartBalance=200; GameState.milestoneIndex=0; GameState.dialogueIndex=0; GameState.balance=200; GameState.reserveBalance=0; GameState.wellbeing=80; GameState.fiscalPoints=0; GameState.timerSeconds=0; GameState.ledger=[{phase:1,day:'Dia 01',desc:'Saldo inicial',amount:200}]; ProceduralCards.usedIds.clear(); resetPhaseDecisions(); }
         function recordTransaction(day,desc,amount){ GameState.balance=Math.round((GameState.balance+amount)*100)/100; GameState.ledger.push({phase:getCurrentPhaseConfig().phase,day,desc,amount}); updateHUD(); }
         function transferToReserve(day,amount){ GameState.balance=Math.round((GameState.balance-amount)*100)/100; GameState.reserveBalance=Math.round((GameState.reserveBalance+amount)*100)/100; GameState.ledger.push({phase:getCurrentPhaseConfig().phase,day,desc:'Reserva de Emergência (15%)',amount:-amount}); updateHUD(); }
-
-        const ProceduralCards = {
-            templates: [
-                { category:'beneficio', icon:'🏛️', title:'Crédito Nota Fiscal Cidadã', desc:'CPF na nota liberou 15% de retorno sobre R$ 800,00.', delta:120, question:'Quanto é 15% de R$ 800,00?', steps:'800 × 0,15 = R$ 120,00.' },
-                { category:'beneficio', icon:'📚', title:'Bazar de Livros Usados', desc:'Lucas e Maya venderam 4 itens usados por R$ 25,00 cada.', delta:100, question:'Qual o valor total arrecadado (4 × R$ 25,00)?', steps:'4 × 25 = R$ 100,00.' },
-                { category:'beneficio', icon:'🎂', title:'Bolos Caseiros da Ana', desc:'Ana faturou R$ 220,00 e gastou R$ 85,00 de ingredientes.', delta:135, question:'Qual foi o lucro líquido (Receita − Custos)?', steps:'220 − 85 = R$ 135,00.' },
-                { category:'desafio', icon:'🚰', title:'Vazamento na Lavanderia', desc:'Reparo emergencial: R$ 65,00 em peças + R$ 80,00 de mão de obra.', delta:-145, question:'Qual o custo total do reparo?', steps:'65 + 80 = R$ 145,00.' },
-                { category:'desafio', icon:'🛍️', title:'Armadilha do Parcelamento', desc:'Um item custa 3x de R$ 55 (R$ 165) ou R$ 140 à vista. Pagaram à vista!', delta:-140, question:'Quanto pagaram à vista (evitando juros)?', steps:'Pagaram R$ 140,00 e economizaram R$ 25,00.' },
-                { category:'desafio', icon:'📱', title:'Tela Trincada do Celular', desc:'O conserto custa R$ 200,00, mas à vista com nota fiscal tem 20% OFF.', delta:-160, question:'Qual o valor final com 20% de desconto?', steps:'Desconto R$ 40,00. Valor pago: R$ 160,00.' }
-            ],
-            drawHand() { return [...this.templates].sort(() => Math.random()-0.5).slice(0, 4); }
-        };
 
         const MCQRegistry = {};
         function handleMCQAnswer(id, idx){ if (MCQRegistry[id]) MCQRegistry[id](idx); }
@@ -877,11 +1006,11 @@
             return vals.slice(0,4).sort(()=>Math.random()-0.5).map((v,idx)=>({ letter:['A','B','C','D'][idx], label:formatBRL(v), isCorrect:Math.abs(v-clean)<0.01 }));
         }
 
-        function renderMCQWidget({ badge, title, contextText, questionText, options, stepByStepHtml, points=15, onComplete }) {
+        function renderMCQWidget({ badge, title, contextText, contextHtml, questionText, options, stepByStepHtml, points=15, skipPublish=false, onComplete }) {
             const wid='mcq_'+Math.random().toString(36).slice(2,8), monId=`${wid}-mon`; let resolved=false;
-            if (Classroom.active) {
+            if (Classroom.active && !skipPublish) {
                 const correctKey = options.find(o=>o.isCorrect)?.letter;
-                setTimeout(() => Classroom.publishActivity({ type:'mcq', badge, title, context:contextText, question:questionText, options:options.map(o=>({key:o.letter,label:o.label})), correctKey, points }, monId), 50);
+                setTimeout(() => Classroom.publishActivity({ type:'mcq', badge, title, context:contextText||'', question:questionText, options:options.map(o=>({key:o.letter,label:o.label})), correctKey, points }, monId), 50);
             }
             MCQRegistry[wid+'_go'] = (ok) => { delete MCQRegistry[wid]; delete MCQRegistry[wid+'_go']; if (Classroom.active) Classroom.clearActivity(); if (onComplete) onComplete(ok); };
             MCQRegistry[wid] = (idx) => {
@@ -892,13 +1021,13 @@
                 fb.className='mt-5 p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 animate-stage-in';
                 fb.innerHTML=`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"><div><h4 class="font-bold text-base">${chosen.isCorrect?'✅ Resposta Exata!':'💡 Resolução:'}</h4><p class="text-xs sm:text-sm font-semibold mt-1">${stepByStepHtml}</p></div><button onclick="MCQRegistry['${wid}_go'](${chosen.isCorrect})" class="shrink-0 px-6 py-3 rounded-xl bg-emerald-600 text-white font-extrabold text-sm">Avançar ▶</button></div>`;
             };
-            const monBar = Classroom.active ? `<div class="mb-4 p-3 rounded-2xl bg-indigo-50 border border-indigo-200"><span class="text-[11px] font-extrabold uppercase text-indigo-800 block mb-1.5">📡 Respostas dos Grupos no Celular:</span><div id="${monId}" class="flex flex-wrap gap-1.5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div></div>` : '';
+            const monBar = Classroom.active && !skipPublish ? `<div class="mb-4 p-3 rounded-2xl bg-indigo-50 border border-indigo-200"><span class="text-[11px] font-extrabold uppercase text-indigo-800 block mb-1.5">📡 Respostas dos Grupos no Celular:</span><div id="${monId}" class="flex flex-wrap gap-1.5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div></div>` : '';
             return `<div id="${wid}" class="bg-white rounded-3xl border border-slate-200 shadow-md p-5 sm:p-7 animate-stage-in">
                 <span class="inline-block text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 mb-3">${badge}</span>
                 <h3 class="text-xl sm:text-2xl font-bold text-slate-900 mb-3">${title}</h3>
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 font-semibold mb-4">${contextText}</div>
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm sm:text-base text-slate-700 font-semibold mb-4 leading-relaxed">${contextHtml || contextText}</div>
                 ${monBar}
-                <p class="font-extrabold text-slate-900 text-base sm:text-lg mb-4">❓ ${questionText}</p>
+                <p class="font-extrabold text-slate-900 text-base sm:text-lg mb-4 leading-snug">❓ ${questionText}</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${options.map((o,i)=>`<button onclick="handleMCQAnswer('${wid}',${i})" class="mcq-opt-btn flex items-center gap-3 p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-indigo-400 text-left transition"><span class="w-8 h-8 rounded-xl bg-slate-100 font-bold flex items-center justify-center shrink-0">${o.letter}</span><span class="font-extrabold text-sm sm:text-base">${o.label}</span></button>`).join('')}</div>
                 <div id="${wid}-fb" class="hidden"></div>
             </div>`;
@@ -907,27 +1036,55 @@
         const MILESTONES = [
             {
                 day:1, shortLabel:'D01', title:'Ponto de Partida',
-                dialogues:[{speaker:'ana',mood:'feliz',text:'Bem-vindos ao início de mais um mês! Vamos cuidar do saldo, da Reserva de Emergência e do Bem-Estar da família.'}],
-                renderStage(c){ const cfg=getCurrentPhaseConfig(); c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-8 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-sky-100 text-sky-800">📅 Fase ${cfg.phase}/4 • ${cfg.monthName}</span><h2 class="text-2xl sm:text-3xl font-bold my-3">Abertura do ${cfg.monthName} da Família Silva</h2><p class="text-slate-600 font-semibold mb-6">Salários previstos: R$ 4.200,00 • Contas previstas: ${formatBRL(cfg.expenses.reduce((a,e)=>a+e.amount,0))}.</p><button onclick="advanceToNextMilestone()" class="px-8 py-4 rounded-2xl bg-indigo-600 text-white font-extrabold shadow-lg">Avançar para o Dia 05 ▶</button></div>`; }
+                dialogues:[{speaker:'ana',mood:'feliz',text:'Bem-vindos ao início de mais um mês! Vamos somar nosso saldo com os salários e planejar com consciência.'}],
+                renderStage(c){ const cfg=getCurrentPhaseConfig(), tot=GameState.currentExpenses.reduce((a,e)=>a+e.amount,0); c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-8 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-sky-100 text-sky-800">📅 Fase ${cfg.phase}/4 • ${cfg.monthName}</span><h2 class="text-2xl sm:text-3xl font-bold my-3">Abertura do ${cfg.monthName} da Família Silva</h2><p class="text-slate-600 font-semibold mb-6">Saldo atual: <strong>${formatBRL(GameState.balance)}</strong> • Salários previstos: <strong>R$ 4.200,00</strong> • Contas previstas: <strong>${formatBRL(tot)}</strong>.</p><button onclick="advanceToNextMilestone()" class="px-8 py-4 rounded-2xl bg-indigo-600 text-white font-extrabold shadow-lg">Avançar para o Dia 05 ▶</button></div>`; }
             },
             {
-                day:5, shortLabel:'D05', title:'Pagamento & Reserva',
-                dialogues:[{speaker:'ana',mood:'feliz',text:'Os salários (R$ 4.200,00) caíram na conta! Vamos separar 15% para a nossa Reserva de Emergência (🛡️).'}],
+                day:5, shortLabel:'D05', title:'Pagamento & Reserva (15%)',
+                dialogues:[
+                    {speaker:'ana',mood:'feliz',text:'Os salários líquidos de R$ 4.200,00 caíram e foram somados ao saldo que já tínhamos na conta!'},
+                    {speaker:'carlos',mood:'pensativo',text:'Vamos aplicar a regra do "Pague-se Primeiro": guardar 15% na Reserva de Emergência antes de começar a pagar as contas!'}
+                ],
                 renderStage(c){
-                    const cfg=getCurrentPhaseConfig();
+                    const cfg=getCurrentPhaseConfig(), prevBal=GameState.phaseStartBalance;
                     if(!GameState.day05Credited){ GameState.day05Credited=true; recordTransaction('Dia 05','Salários líquidos',4200); }
-                    c.innerHTML = renderMCQWidget({ badge:`🛡️ ${cfg.monthName} • Pague-se Primeiro`, title:'Dia 05: Transferindo 15% para a Reserva', contextText:'A família recebeu R$ 4.200,00 de salários e vai transferir 15% para a Reserva de Emergência.', questionText:'Quanto corresponde a 15% de R$ 4.200,00?', options:generateMoneyOptions(630,[420,840,510]), stepByStepHtml:'4200 × 0,15 = <strong>R$ 630,00</strong> transferidos para 🛡️ Reserva!', onComplete(){ transferToReserve('Dia 05',630); Classroom.applyGlobalDelta(4200-630, 630, 0); advanceToNextMilestone(); } });
+                    const totalAvail = Math.round((prevBal + 4200)*100)/100, calcBase = totalAvail > 0 ? totalAvail : 4200, res15 = Math.round(calcBase * 0.15 * 100) / 100;
+
+                    if (Classroom.active) {
+                        Classroom.publishActivity({ type:'day05_reserve' }, 'mon-d05');
+                        c.innerHTML = `<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in">
+                            <span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">🛡️ Dia 05 • Regra "Pague-se Primeiro"</span>
+                            <h3 class="text-2xl font-bold my-2">Cada grupo está calculando seus 15% de Reserva no celular!</h3>
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-left text-sm text-emerald-950 font-semibold max-w-2xl mx-auto my-4 leading-relaxed">
+                                💡 <strong>Por que guardar 15% logo no Dia 05?</strong><br>
+                                Separar uma porcentagem fixa assim que o salário entra cria uma <strong>Reserva de Emergência</strong> — um colchão financeiro que protege a família contra imprevistos e evita dívidas com juros altos. Como cada grupo tem um saldo acumulado diferente, cada equipe calcula 15% sobre o seu próprio <em>Saldo + R$ 4.200,00</em>!
+                            </div>
+                            <div id="mon-d05" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div>
+                            <button onclick="transferToReserve('Dia 05', ${res15}); Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Todos concluíram — Avançar para o Dia 10 ▶</button>
+                        </div>`;
+                        return;
+                    }
+
+                    c.innerHTML = renderMCQWidget({
+                        badge:`🛡️ ${cfg.monthName} • Regra "Pague-se Primeiro"`, title:'Dia 05: Construindo a Reserva de Emergência (15%)',
+                        contextHtml:`<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 mb-3 text-xs sm:text-sm text-emerald-950 leading-relaxed">💡 <strong>Por que guardar 15% antes de pagar as contas?</strong><br>Separar 15% logo que o salário entra constrói a <strong>Reserva de Emergência</strong> — protegendo a família contra imprevistos sem precisar recorrer a empréstimos com juros altos.</div><p>Somando o saldo anterior (<strong>${formatBRL(prevBal)}</strong>) aos salários líquidos do mês (<strong>R$ 4.200,00</strong>), a família tem agora <strong>${formatBRL(totalAvail)}</strong> disponíveis na conta.</p>`,
+                        questionText:`Calculando 15% sobre ${formatBRL(calcBase)}, qual valor deve ser transferido agora para a Reserva de Emergência?`,
+                        options:generateMoneyOptions(res15,[Math.round(calcBase*0.10), Math.round(calcBase*0.20), res15+35]),
+                        stepByStepHtml:`Calculamos 15% de ${formatBRL(calcBase)}: ${calcBase} × 0,15 = <strong>${formatBRL(res15)}</strong> transferidos para 🛡️ Reserva!`,
+                        skipPublish:true,
+                        onComplete(){ transferToReserve('Dia 05', res15); advanceToNextMilestone(); }
+                    });
                 }
             },
             {
                 day:10, shortLabel:'D10', title:'Contas & Padrão de Vida',
-                dialogues:[{speaker:'carlos',mood:'pensativo',text:'Vamos classificar as 8 contas do mês e depois cada grupo escolhe seu Padrão de Vida no celular!'}],
+                dialogues:[{speaker:'carlos',mood:'pensativo',text:'Atenção: os gastos variáveis mudaram neste mês! Vamos classificar as 8 contas e depois ajustar o Padrão de Vida.'}],
                 renderStage(c){
-                    const cfg=getCurrentPhaseConfig(), exps=cfg.expenses, tot=exps.reduce((a,e)=>a+e.amount,0);
+                    const exps=GameState.currentExpenses, tot=exps.reduce((a,e)=>a+e.amount,0);
                     function drawExp(){
                         const done=GameState.decisions.classifiedIds;
                         if(done.length===exps.length){ drawLife(); return; }
-                        c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 animate-stage-in"><h3 class="text-xl font-bold mb-3">Classifique as Contas (${done.length}/8) — Total: ${formatBRL(tot)}</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${exps.map(e=>{const ok=done.includes(e.id);return `<div class="p-3 rounded-2xl border-2 ${ok?'bg-emerald-50 border-emerald-300':'bg-slate-50 border-slate-200'}"><div class="flex justify-between mb-1"><span>${e.icon}</span><strong class="text-sm">${formatBRL(e.amount)}</strong></div><div class="font-bold text-xs mb-2">${e.name}</div>${ok?`<div class="text-xs font-extrabold text-emerald-700 text-center">✓ ${e.type}</div>`:`<div class="grid grid-cols-2 gap-1"><button onclick="clsExp('${e.id}','fixo')" class="py-1 rounded-lg bg-white border text-xs font-bold">Fixo</button><button onclick="clsExp('${e.id}','variavel')" class="py-1 rounded-lg bg-white border text-xs font-bold">Variável</button></div>`}</div>`;}).join('')}</div></div>`;
+                        c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 animate-stage-in"><h3 class="text-xl font-bold mb-1">Classifique as Contas (${done.length}/8) — Total: ${formatBRL(tot)}</h3><p class="text-xs text-slate-500 font-semibold mb-4">Os gastos variáveis oscilaram neste mês conforme consumo e inflação.</p><div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${exps.map(e=>{const ok=done.includes(e.id);return `<div class="p-3 rounded-2xl border-2 ${ok?'bg-emerald-50 border-emerald-300':'bg-slate-50 border-slate-200'}"><div class="flex justify-between mb-1"><span>${e.icon}</span><strong class="text-sm">${formatBRL(e.amount)}</strong></div><div class="font-bold text-xs mb-2">${e.name}</div>${ok?`<div class="text-xs font-extrabold text-emerald-700 text-center">✓ ${e.type}</div>`:`<div class="grid grid-cols-2 gap-1"><button onclick="clsExp('${e.id}','fixo')" class="py-1 rounded-lg bg-white border text-xs font-bold">Fixo</button><button onclick="clsExp('${e.id}','variavel')" class="py-1 rounded-lg bg-white border text-xs font-bold">Variável</button></div>`}</div>`;}).join('')}</div></div>`;
                     }
                     window.clsExp=(id,t)=>{ const it=exps.find(e=>e.id===id); if(it.type===t){ SoundFX.play('click'); GameState.decisions.classifiedIds.push(id); recordTransaction('Dia 10',it.name,-it.amount); if(GameState.decisions.classifiedIds.length===exps.length) Classroom.applyGlobalDelta(-tot,0,0); drawExp(); } else { SoundFX.play('error'); showToast('Tente novamente!','warning'); } };
                     function drawLife(){
@@ -935,25 +1092,31 @@
                             Classroom.publishActivity({type:'lifestyle'},'mon-lifestyle');
                             c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-teal-100 text-teal-800">⚖️ Autonomia nos Celulares</span><h3 class="text-2xl font-bold my-2">Cada grupo está escolhendo seu Padrão de Vida no celular!</h3><div id="mon-lifestyle" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando escolhas...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Todos escolheram — Avançar ▶</button></div>`;
                         } else {
-                            c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6"><h3 class="text-xl font-bold mb-4">Escolha o Padrão de Vida:</h3><div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><button onclick="GameState.wellbeing=Math.min(100,GameState.wellbeing+5); advanceToNextMilestone();" class="p-4 rounded-2xl bg-slate-50 border-2 text-left"><strong>🍕 Manter</strong><span class="block text-xs">R$ 0 • +5% Bem-Estar</span></button><button onclick="recordTransaction('Dia 10','Plano Equilibrado',150); GameState.wellbeing=Math.min(100,GameState.wellbeing+5); advanceToNextMilestone();" class="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-left"><strong>🥗 Equilibrado</strong><span class="block text-xs">+R$ 150 • +5% Bem-Estar</span></button><button onclick="recordTransaction('Dia 10','Corte Radical',280); GameState.wellbeing=Math.max(0,GameState.wellbeing-15); advanceToNextMilestone();" class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-left"><strong>✂️ Corte Radical</strong><span class="block text-xs">+R$ 280 • −15% Bem-Estar</span></button></div></div>`;
+                            c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6"><h3 class="text-xl font-bold mb-2">Como a família vai conduzir os Gastos Variáveis?</h3><p class="text-sm text-slate-600 font-semibold mb-4">Escolha equilibrando economia e qualidade de vida:</p><div class="grid grid-cols-1 sm:grid-cols-3 gap-3"><button onclick="GameState.wellbeing=Math.min(100,GameState.wellbeing+5); advanceToNextMilestone();" class="p-4 rounded-2xl bg-slate-50 border-2 text-left"><strong>🍕 Manter Padrão Atual</strong><span class="block text-xs mt-1">Sem cortes no lazer ou delivery. Economia: R$ 0 • +5% Bem-Estar</span></button><button onclick="recordTransaction('Dia 10','Plano Equilibrado',150); GameState.wellbeing=Math.min(100,GameState.wellbeing+5); advanceToNextMilestone();" class="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-left"><strong>🥗 Plano Equilibrado</strong><span class="block text-xs mt-1">Lista de compras + lazer gratuito no parque. +R$ 150 • +5% Bem-Estar</span></button><button onclick="recordTransaction('Dia 10','Corte Radical',280); GameState.wellbeing=Math.max(0,GameState.wellbeing-15); advanceToNextMilestone();" class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-left"><strong>✂️ Corte Radical</strong><span class="block text-xs mt-1">Zera todos os passeios e lazer do mês. +R$ 280 • −15% Bem-Estar</span></button></div></div>`;
                         }
                     }
                     drawExp();
                 }
             },
-            { day:14, shortLabel:'D14', title:'Carta Surpresa 1', dialogues:[{speaker:'lucas',mood:'surpreso',text:'Hora das Cartas Surpresa! Cada grupo vira a própria carta no celular e resolve o cálculo!'}], renderStage(c){ renderCardStage(c,14); } },
+            { day:14, shortLabel:'D14', title:'Carta Surpresa 1', dialogues:[{speaker:'lucas',mood:'surpreso',text:'Cartas Surpresa geradas dinamicamente! Cada grupo vira sua carta no celular.'}], renderStage(c){ renderCardStage(c,14); } },
             {
                 day:18, shortLabel:'D18', title:'Saúde & Nota Cidadã',
                 dialogues:[{speaker:'maya',mood:'doente',text:'Surgiu um imprevisto de saúde! Vamos usar o desconto + CPF na Nota Fiscal Cidadã.'}],
                 renderStage(c){
                     const cfg=getCurrentPhaseConfig(), ev=cfg.healthEvent, disc=Math.round(ev.fullPrice*(ev.discountPct/100)*100)/100, finalP=Math.round((ev.fullPrice-disc)*100)/100;
-                    c.innerHTML = renderMCQWidget({ badge:`🏥 ${cfg.monthName} • Saúde & Cidadania`, title:ev.title, contextText:ev.itemDesc, questionText:`Aplicando ${ev.discountPct}% de desconto sobre ${formatBRL(ev.fullPrice)}, quanto a família vai pagar?`, options:generateMoneyOptions(finalP,[disc,ev.fullPrice-20,finalP+25]), stepByStepHtml:`Desconto: ${formatBRL(disc)} • Pago: <strong>${formatBRL(finalP)}</strong>.`, onComplete(){ recordTransaction('Dia 18',ev.ledgerDesc,-finalP); Classroom.applyGlobalDelta(-finalP,0,5); advanceToNextMilestone(); } });
+                    c.innerHTML = renderMCQWidget({
+                        badge:`🏥 ${cfg.monthName} • Saúde & Cidadania Fiscal`, title:ev.title, contextText:ev.itemDesc,
+                        questionText:`Aplicando o desconto de ${ev.discountPct}% sobre o valor integral de ${formatBRL(ev.fullPrice)}, quanto a família vai pagar no final?`,
+                        options:generateMoneyOptions(finalP,[disc,ev.fullPrice-20,finalP+25]),
+                        stepByStepHtml:`1) Desconto (${ev.discountPct}% de ${formatBRL(ev.fullPrice)}) = ${formatBRL(disc)}.<br>2) Valor final pago: ${formatBRL(ev.fullPrice)} − ${formatBRL(disc)} = <strong>${formatBRL(finalP)}</strong>.`,
+                        onComplete(){ recordTransaction('Dia 18',ev.ledgerDesc,-finalP); Classroom.applyGlobalDelta(-finalP,0,5); advanceToNextMilestone(); }
+                    });
                 }
             },
-            { day:23, shortLabel:'D23', title:'Carta Surpresa 2', dialogues:[{speaker:'carlos',mood:'pensativo',text:'Segunda Carta Surpresa do mês! Virem a carta no celular e façam o cálculo.'}], renderStage(c){ renderCardStage(c,23); } },
+            { day:23, shortLabel:'D23', title:'Carta Surpresa 2', dialogues:[{speaker:'carlos',mood:'pensativo',text:'Segunda Carta Surpresa do mês com novos valores! Virem a carta e façam o cálculo.'}], renderStage(c){ renderCardStage(c,23); } },
             {
                 day:27, shortLabel:'D27', title:'Consumo Consciente (kWh)',
-                dialogues:[{speaker:'ana',mood:'feliz',text:'Cada grupo escolhe 3 hábitos de economia de energia no celular e calcula quanto vai poupar!'}],
+                dialogues:[{speaker:'ana',mood:'feliz',text:'Cada grupo escolhe 3 hábitos de economia de energia no celular e calcula quanto vai poupar na conta de luz!'}],
                 renderStage(c){
                     const cfg=getCurrentPhaseConfig(), tariff=cfg.energyConfig.tariff;
                     const habits=[{id:'h1',icon:'🚿',title:'Banhos de até 8 min',kwhSaved:50},{id:'h2',icon:'❄️',title:'Ar em 23°C + Timer',kwhSaved:35},{id:'h3',icon:'🔌',title:'Tirar stand-by',kwhSaved:20},{id:'h4',icon:'💡',title:'Lâmpadas LED',kwhSaved:15},{id:'h5',icon:'🧊',title:'Vedação geladeira',kwhSaved:18}];
@@ -965,35 +1128,43 @@
                     const sel=new Set();
                     function drawH(){ c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6"><h3 class="text-xl font-bold mb-3">Escolha 3 Hábitos (${sel.size}/3) — ${formatBRL(tariff)}/kWh</h3><div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">${habits.map(h=>`<button onclick="tgH('${h.id}')" class="p-3 rounded-xl border-2 text-left ${sel.has(h.id)?'bg-emerald-50 border-emerald-500':'bg-white'}">${h.icon} <strong>${h.title}</strong> (−${h.kwhSaved} kWh)</button>`).join('')}</div><button onclick="cfH()" ${sel.size!==3?'disabled':''} class="px-6 py-3 rounded-xl font-extrabold text-sm ${sel.size===3?'bg-emerald-600 text-white':'bg-slate-200 text-slate-400'}">Calcular Economia ▶</button></div>`; }
                     window.tgH=(id)=>{ if(sel.has(id))sel.delete(id); else if(sel.size<3)sel.add(id); drawH(); };
-                    window.cfH=()=>{ const kwh=habits.filter(h=>sel.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0), saved=Math.round(kwh*tariff*100)/100; c.innerHTML=renderMCQWidget({badge:'⚡ Energia',title:'Calcule a Economia',contextText:`Corte: ${kwh} kWh × ${formatBRL(tariff)}/kWh.`,questionText:'Quanto a família economizou?',options:generateMoneyOptions(saved,[saved+15,kwh]),stepByStepHtml:`${kwh} × ${formatBRL(tariff)} = <strong>${formatBRL(saved)}</strong>.`,onComplete(){recordTransaction('Dia 27','Economia Energia',saved);advanceToNextMilestone();}}); };
+                    window.cfH=()=>{ const kwh=habits.filter(h=>sel.has(h.id)).reduce((a,h)=>a+h.kwhSaved,0), saved=Math.round(kwh*tariff*100)/100; c.innerHTML=renderMCQWidget({badge:'⚡ Energia',title:'Calcule a Economia na Conta de Luz',contextText:`Com os 3 hábitos escolhidos, a família reduziu o consumo em ${kwh} kWh. Na ${cfg.energyConfig.bandeira}, cada kWh custa ${formatBRL(tariff)}.`,questionText:`Multiplicando os ${kwh} kWh economizados pela tarifa de ${formatBRL(tariff)} por kWh, quantos reais a família economizou?`,options:generateMoneyOptions(saved,[saved+15,kwh]),stepByStepHtml:`${kwh} kWh × ${formatBRL(tariff)} = <strong>${formatBRL(saved)}</strong> economizados!`,skipPublish:true,onComplete(){recordTransaction('Dia 27','Economia Energia',saved);advanceToNextMilestone();}}); };
                     drawH();
                 }
             },
             {
                 day:28, shortLabel:'D28', title:'Investimento / Dívida',
-                dialogues:[{speaker:'lucas',mood:'pensativo',text:'Dia 28! Cada grupo decide no celular onde investir seu saldo (ou renegocia a dívida)!'}],
+                dialogues:[{speaker:'lucas',mood:'pensativo',text:'Dia 28! Clique em cada opção para ler os riscos e benefícios na janela flutuante antes de confirmar!'}],
                 renderStage(c){
                     if(Classroom.active){
                         Classroom.publishActivity({type:'investment'},'mon-inv');
-                        c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800">📈 Autonomia nos Celulares</span><h3 class="text-2xl font-bold my-2">Cada grupo está investindo (ou renegociando) no celular!</h3><div id="mon-inv" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Ir para o Fechamento (Dia 30) ▶</button></div>`;
+                        c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800">📈 Autonomia nos Celulares</span><h3 class="text-2xl font-bold my-2">Cada grupo está analisando e escolhendo seu investimento no celular!</h3><p class="text-sm text-slate-600 mb-4">Ao tocar em cada opção, uma janela explica riscos e benefícios antes da confirmação.</p><div id="mon-inv" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Ir para o Fechamento (Dia 30) ▶</button></div>`;
                         return;
                     }
-                    c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center"><h3 class="text-xl font-bold mb-4">Saldo atual: ${formatBRL(GameState.balance)}</h3><button onclick="recordTransaction('Dia 28','Tesouro Selic (+1%)',Math.round(Math.max(0,GameState.balance)*0.01*100)/100); advanceToNextMilestone();" class="px-7 py-3.5 rounded-2xl bg-emerald-600 text-white font-extrabold">Aplicar no Tesouro Selic (+1%) ▶</button></div>`;
+                    const cap = Math.max(0, GameState.balance);
+                    c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 animate-stage-in">
+                        <h3 class="text-xl font-bold mb-1">Onde investir seus ${formatBRL(cap)}?</h3>
+                        <p class="text-xs text-slate-500 font-semibold mb-4">Clique em uma modalidade para abrir a explicação com riscos e benefícios antes de escolher:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${INVESTMENT_CATALOG.map((m,i)=>`<button onclick="openInvInfoModal(${i}, (inv)=>hostConfirmInv(inv))" class="text-left p-4 rounded-2xl bg-slate-50 hover:bg-indigo-50 border-2 border-slate-200 hover:border-indigo-400 transition flex items-center justify-between"><div><span class="text-2xl block mb-1">${m.icon}</span><strong class="text-sm">${m.name}</strong></div><span class="text-xs font-extrabold text-indigo-600">Ver detalhes ℹ️</span></button>`).join('')}</div>
+                    </div>`;
+                    window.hostConfirmInv = (inv) => {
+                        const rate = inv.getRate(), delta = Math.round(cap*rate*100)/100, upd = Math.round((cap+delta)*100)/100;
+                        const pct = `${rate>0?'+':''}${(rate*100).toFixed(1).replace('.0','').replace('.',',')}%`;
+                        const word = rate >= 0 ? 'rendeu (aumentou)' : 'caiu (sofreu queda de)';
+                        c.innerHTML = renderMCQWidget({ badge:`💹 ${inv.name} (${pct})`, title:'Calcule o Novo Saldo do Investimento', contextText:`A família aplicou ${formatBRL(cap)} em ${inv.name}. Neste mês, o investimento ${word} ${pct}.`, questionText:`Aplicando essa variação de ${pct} sobre ${formatBRL(cap)}, qual será o novo saldo atualizado?`, options:generateMoneyOptions(upd,[cap-delta,cap*1.03]), stepByStepHtml:`Variação: ${delta>=0?'+':'−'}${formatBRL(Math.abs(delta))} • Novo saldo: <strong>${formatBRL(upd)}</strong>.`, skipPublish:true, onComplete(){ recordTransaction('Dia 28',`${inv.name} (${pct})`,delta); advanceToNextMilestone(); } });
+                    };
                 }
             },
             {
                 day:30, shortLabel:'D30', title:'Fechamento do Mês',
-                dialogues:[{speaker:'ana',mood:'feliz',text:'Fechamos o mês! Clique em "Ver Resultado" para abrir o Dashboard com a equipe campeã e o histórico de escolhas!'}],
+                dialogues:[{speaker:'ana',mood:'feliz',text:'Fechamos o mês! Clique em "Ver Resultado" para abrir o Dashboard com a equipe campeã e salvar em PDF!'}],
                 renderStage(c){
                     const cfg=getCurrentPhaseConfig(), isLast=GameState.phaseIndex>=PHASE_CONFIGS.length-1;
                     c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-8 text-center animate-stage-in">
                         <span class="inline-block text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 mb-2">🏁 Fechamento ${cfg.monthName} (Fase ${cfg.phase}/4)</span>
                         <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">${isLast ? 'Campanha Concluída!' : `Fim do ${cfg.monthName}!`}</h2>
-                        <p class="text-sm text-slate-600 font-semibold mb-6">Veja o ranking completo, a equipe campeã e todo o histórico de decisões de cada grupo (com opção de salvar em PDF).</p>
-                        <div class="flex flex-wrap justify-center gap-3">
-                            <button onclick="openResultsDashboard()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-base shadow-lg transition">
-                                📊 Ver Resultado (Dashboard + PDF)
-                            </button>
+                        <div class="flex flex-wrap justify-center gap-3 mt-6">
+                            <button onclick="openResultsDashboard()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-base shadow-lg transition">📊 Ver Resultado (Dashboard + PDF)</button>
                             ${!isLast ? `<button onclick="startNextPhase()" class="px-7 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-md">Avançar para Fase ${cfg.phase+1} ▶</button>` : ''}
                         </div>
                     </div>`;
@@ -1005,14 +1176,14 @@
             const hand = ProceduralCards.drawHand();
             if (Classroom.active) {
                 Classroom.publishActivity({type:'card_pick', day:dayNum, cards:hand}, `mon-card-${dayNum}`);
-                c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-purple-100 text-purple-800">🃏 Dia ${dayNum} • Autonomia nos Celulares</span><h3 class="text-2xl font-bold my-2">Cada grupo está virando sua Carta Surpresa no celular!</h3><div id="mon-card-${dayNum}" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Todos concluíram — Avançar ▶</button></div>`;
+                c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6 text-center animate-stage-in"><span class="text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-purple-100 text-purple-800">🃏 Dia ${dayNum} • Cartas Dinâmicas</span><h3 class="text-2xl font-bold my-2">Cada grupo está virando sua Carta Surpresa no celular!</h3><div id="mon-card-${dayNum}" class="flex flex-wrap justify-center gap-2 my-5"><span class="text-xs text-slate-400">Aguardando grupos...</span></div><button onclick="Classroom.clearActivity(); advanceToNextMilestone();" class="px-8 py-3.5 rounded-2xl bg-indigo-600 text-white font-extrabold">Todos concluíram — Avançar ▶</button></div>`;
                 return;
             }
-            c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6"><h3 class="text-xl font-bold mb-4">🃏 Dia ${dayNum}: Escolha 1 Carta</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${hand.map((cd,i)=>`<button onclick="pickOffCard(${i})" class="h-32 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white font-bold flex flex-col items-center justify-center"><span class="text-3xl">🎴</span>Carta #${i+1}</button>`).join('')}</div></div>`;
-            window.pickOffCard=(i)=>{ const cd=hand[i]; c.innerHTML=renderMCQWidget({badge:`🃏 ${cd.title}`,title:cd.title,contextText:cd.desc,questionText:cd.question,options:generateMoneyOptions(Math.abs(cd.delta)),stepByStepHtml:cd.steps,onComplete(){recordTransaction(`Dia ${dayNum}`,cd.title,cd.delta);advanceToNextMilestone();}}); };
+            c.innerHTML=`<div class="bg-white rounded-3xl border shadow-md p-6"><h3 class="text-xl font-bold mb-4">🃏 Dia ${dayNum}: Escolha 1 Carta Surpresa</h3><div class="grid grid-cols-2 lg:grid-cols-4 gap-3">${hand.map((cd,i)=>`<button onclick="pickOffCard(${i})" class="h-32 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-800 text-white font-bold flex flex-col items-center justify-center"><span class="text-3xl">🎴</span>Carta #${i+1}</button>`).join('')}</div></div>`;
+            window.pickOffCard=(i)=>{ const cd=hand[i]; c.innerHTML=renderMCQWidget({badge:`🃏 ${cd.title}`,title:cd.title,contextText:cd.desc,questionText:cd.question,options:generateMoneyOptions(Math.abs(cd.delta)),stepByStepHtml:cd.steps,skipPublish:true,onComplete(){recordTransaction(`Dia ${dayNum}`,cd.title,cd.delta);advanceToNextMilestone();}}); };
         }
 
-        function startNextPhase(){ GameState.phaseIndex++; GameState.milestoneIndex=0; GameState.dialogueIndex=0; resetPhaseDecisions(); loadCurrentMilestone(); }
+        function startNextPhase(){ GameState.phaseIndex++; GameState.phaseStartBalance=GameState.balance; GameState.milestoneIndex=0; GameState.dialogueIndex=0; resetPhaseDecisions(); loadCurrentMilestone(); }
 
         let tTimer=null, isTyp=false, fText='';
         function renderDialogueBar(){
