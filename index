@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio do Orçamento Familiar • Modo Turma (QR Code + Firebase)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Firebase SDK (Compat para uso direto em arquivo único) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <!-- Gerador de QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Nunito', sans-serif; background: linear-gradient(135deg, #e0f2fe 0%, #eef2ff 50%, #f8fafc 100%); color: #1e293b; }
+        h1, h2, h3, .font-display { font-family: 'Fredoka', sans-serif; }
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- ===================================================================== -->
+    <!-- TELA 1: CONTROLE DO ALUNO (EXIBIDA AUTOMATICAMENTE VIA QR CODE)       -->
+    <!-- ===================================================================== -->
+    <section id="student-app" class="hidden flex-1 flex flex-col max-w-md w-full mx-auto p-4 justify-between">
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex items-center justify-between">
+            <div>
+                <span id="stu-room-badge" class="text-[11px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800">Sala: ---</span>
+                <h1 id="stu-group-title" class="font-display font-bold text-lg text-slate-900 mt-0.5">Entrar no Jogo</h1>
+            </div>
+            <span id="stu-status-dot" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Conectado"></span>
+        </header>
+
+        <!-- Passo A: Identificação do Grupo -->
+        <div id="stu-join-view" class="my-auto bg-white rounded-3xl shadow-lg border border-slate-200 p-6">
+            <h2 class="font-display text-2xl font-bold text-slate-900 mb-2">Qual é o nome do seu grupo?</h2>
+            <p class="text-sm text-slate-600 font-semibold mb-4">Apenas 1 celular por grupo (o tesoureiro). Debatam antes de enviar!</p>
+            <input id="stu-name-input" type="text" maxlength="28" placeholder="Ex.: Equipe Economia Criativa"
+                class="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-bold text-base mb-4">
+            <button onclick="studentJoinRoom()"
+                class="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-md transition">
+                Entrar na Sala ▶
+            </button>
+        </div>
+
+        <!-- Passo B: Painel do Grupo + Controle de Respostas -->
+        <div id="stu-controller-view" class="hidden flex-1 flex flex-col gap-4 my-4">
+            <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-white rounded-2xl p-3 border border-indigo-100 shadow-sm">
+                    <span class="text-[10px] font-extrabold uppercase text-indigo-500 block">💰 Saldo Conta</span>
+                    <strong id="stu-saldo" class="text-base font-black text-indigo-950 tabular-nums">R$ 200,00</strong>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-emerald-100 shadow-sm">
+                    <span class="text-[10px] font-extrabold uppercase text-emerald-600 block">🛡️ Reserva</span>
+                    <strong id="stu-reserva" class="text-base font-black text-emerald-900 tabular-nums">R$ 0,00</strong>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-sky-100 shadow-sm">
+                    <span class="text-[10px] font-extrabold uppercase text-sky-600 block">😊 Bem-Estar</span>
+                    <strong id="stu-bemestar" class="text-base font-black text-sky-900 tabular-nums">80%</strong>
+                </div>
+                <div class="bg-white rounded-2xl p-3 border border-amber-100 shadow-sm">
+                    <span class="text-[10px] font-extrabold uppercase text-amber-600 block">🏛️ Cidadania</span>
+                    <strong id="stu-cidadania" class="text-base font-black text-amber-900 tabular-nums">0 pts</strong>
+                </div>
+            </div>
+
+            <div id="stu-action-area" class="flex-1 bg-white rounded-3xl shadow-md border border-slate-200 p-5 flex flex-col justify-center">
+                <div class="text-center text-slate-500 font-bold">
+                    <span class="text-4xl block mb-2">👀</span>
+                    Aguardando o professor abrir o próximo desafio no telão...
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-xs font-bold text-slate-400 pb-2">
+            Desafio do Orçamento Familiar • Controle do Grupo
+        </footer>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TELA 2: TELÃO DO PROFESSOR (HOST)                                     -->
+    <!-- ===================================================================== -->
+    <section id="host-app" class="hidden flex-1 flex flex-col">
+        <header class="bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm px-4 py-3">
+            <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="font-display font-bold text-lg text-slate-900">🎓 Desafio do Orçamento Familiar</span>
+                    <span id="host-room-pill" class="hidden bg-indigo-600 text-white text-xs font-extrabold px-3 py-1 rounded-full">Sala: ---</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openQRModal()" id="btn-show-qr" class="hidden px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 text-xs font-extrabold transition">
+                        📱 QR Code (<span id="host-group-count">0</span> grupos)
+                    </button>
+                    <button onclick="openLeaderboardModal()" id="btn-show-rank" class="hidden px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-extrabold transition">
+                        🏆 Placar da Turma
+                    </button>
+                    <button onclick="exportClassCSV()" id="btn-export-csv" class="hidden px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold transition">
+                        📥 Exportar CSV
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
+            <div id="host-lobby" class="bg-white rounded-3xl shadow-xl border border-slate-200 p-6 sm:p-10 text-center">
+                <h1 class="font-display text-3xl sm:text-4xl font-bold text-slate-900 mb-3">
+                    Modo Turma Interativo (Telão + Celular)
+                </h1>
+                <p class="text-slate-600 font-semibold max-w-2xl mx-auto mb-8">
+                    Crie uma sala para projetar o QR Code. Cada grupo entra pelo celular com seu nome e responde às questões e decisões financeiras em tempo real!
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button onclick="hostCreateRoom()"
+                        class="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-lg transition">
+                        🚀 Criar Sala com QR Code
+                    </button>
+                </div>
+            </div>
+
+            <div id="host-stage" class="hidden space-y-5">
+                <div id="host-question-card" class="bg-white rounded-3xl shadow-md border border-slate-200 p-6 sm:p-8"></div>
+
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <h3 class="font-display font-bold text-base text-slate-900">📡 Monitor de Respostas ao Vivo</h3>
+                        <div class="flex items-center gap-2">
+                            <button id="btn-reveal-answers" onclick="hostRevealAndGrade()"
+                                class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-extrabold shadow-sm transition">
+                                ✅ Encerrar e Pontuar Turma
+                            </button>
+                            <button id="btn-next-stage" onclick="hostNextStage()"
+                                class="hidden px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-extrabold shadow-sm transition">
+                                Próximo Marco ▶
+                            </button>
+                        </div>
+                    </div>
+                    <div id="host-live-monitor" class="flex flex-wrap gap-2">
+                        <span class="text-xs text-slate-400 font-bold">Aguardando grupos entrarem na sala...</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <!-- MODAL: QR CODE -->
+    <div id="qr-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center shadow-2xl">
+            <h2 class="font-display text-2xl font-bold text-slate-900 mb-1">Escaneie para Entrar na Sala</h2>
+            <p class="text-sm text-slate-600 font-semibold mb-4">1 celular por grupo • Código: <strong id="qr-room-code" class="text-indigo-600">---</strong></p>
+
+            <div id="qrcode-box" class="inline-block p-4 bg-white border-4 border-indigo-100 rounded-2xl shadow-inner mb-4"></div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-mono text-slate-600 break-all mb-4" id="qr-url-text"></div>
+
+            <div class="text-left mb-5">
+                <span class="text-xs font-extrabold uppercase text-slate-500 block mb-2">Grupos Conectados:</span>
+                <div id="qr-connected-list" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                    <span class="text-xs text-slate-400 font-semibold">Nenhum grupo conectado ainda...</span>
+                </div>
+            </div>
+
+            <button onclick="closeQRModalAndStart()"
+                class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md transition">
+                Fechar e Ir para o Jogo ▶
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: PLACAR -->
+    <div id="leaderboard-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-display text-2xl font-bold text-slate-900">🏆 Placar Comparativo da Turma</h2>
+                <button onclick="document.getElementById('leaderboard-modal').classList.add('hidden')" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 font-bold text-slate-600">&times;</button>
+            </div>
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b-2 border-slate-200 text-xs uppercase text-slate-500">
+                            <th class="py-2.5 px-3">Grupo</th>
+                            <th class="py-2.5 px-3 text-right">💰 Saldo</th>
+                            <th class="py-2.5 px-3 text-right">🛡️ Reserva</th>
+                            <th class="py-2.5 px-3 text-center">😊 Bem-Estar</th>
+                            <th class="py-2.5 px-3 text-center">🏛️ Cidadania</th>
+                            <th class="py-2.5 px-3 text-center">Acertos</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-tbody" class="divide-y divide-slate-100 font-bold"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================================
+        // 1. CONFIGURAÇÃO DO FIREBASE (JÁ PREENCHIDA)
+        // =====================================================================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBpToRSI6Uh6PQE8DEOVRsbIo01mOSu4fo",
+            authDomain: "profmat13edufinaceira.firebaseapp.com",
+            databaseURL: "https://profmat13edufinaceira-default-rtdb.firebaseio.com",
+            projectId: "profmat13edufinaceira",
+            storageBucket: "profmat13edufinaceira.firebasestorage.app",
+            messagingSenderId: "707296052535",
+            appId: "1:707296052535:web:965f7f11e0d9e52b1086b2"
+        };
+
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const db = firebase.database();
+
+        function formatBRL(v) {
+            return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // =====================================================================
+        // 2. ROTEIRO DE ETAPAS SINCRONIZADAS
+        // =====================================================================
+        const STAGES = [
+            {
+                id: 'dia05_reserva',
+                type: 'mcq',
+                badge: '🛡️ Dia 05 • Pague-se Primeiro',
+                title: 'Salário na Conta: Construindo a Reserva (15%)',
+                context: 'A família tinha R$ 200,00 e recebeu R$ 4.200,00 de salários. Quanto corresponde a 15% dos salários para transferir à Reserva de Emergência?',
+                options: [
+                    { key: 'A', label: 'R$ 420,00' },
+                    { key: 'B', label: 'R$ 630,00' },
+                    { key: 'C', label: 'R$ 840,00' },
+                    { key: 'D', label: 'R$ 510,00' }
+                ],
+                correctKey: 'B',
+                applyToGroup(grp, answer) {
+                    const isCorrect = answer === 'B';
+                    return {
+                        saldo: grp.saldo + 4200 - 630,
+                        reserva: grp.reserva + 630,
+                        bemEstar: grp.bemEstar,
+                        cidadania: grp.cidadania + (isCorrect ? 20 : 0),
+                        acertos: grp.acertos + (isCorrect ? 1 : 0)
+                    };
+                }
+            },
+            {
+                id: 'dia10_padrao',
+                type: 'decision',
+                badge: '⚖️ Dia 10 • Consumo Consciente',
+                title: 'Ajuste dos Gastos Variáveis da Família',
+                context: 'Cada grupo escolhe no celular como vai conduzir Supermercado e Lazer neste mês. Não há resposta única — avaliem o equilíbrio!',
+                options: [
+                    { key: 'MANTER', label: '🍕 Manter Padrão (Economia R$ 0 | +5% Bem-Estar)' },
+                    { key: 'EQUILIBRADO', label: '🥗 Plano Equilibrado (+R$ 150 | +5% Bem-Estar)' },
+                    { key: 'RADICAL', label: '✂️ Corte Radical (+R$ 280 | −15% Bem-Estar)' }
+                ],
+                correctKey: null,
+                applyToGroup(grp, answer) {
+                    if (answer === 'EQUILIBRADO') {
+                        return { ...grp, saldo: grp.saldo + 150, bemEstar: Math.min(100, grp.bemEstar + 5), cidadania: grp.cidadania + 15 };
+                    }
+                    if (answer === 'RADICAL') {
+                        return { ...grp, saldo: grp.saldo + 280, bemEstar: Math.max(0, grp.bemEstar - 15) };
+                    }
+                    return { ...grp, bemEstar: Math.min(100, grp.bemEstar + 5) };
+                }
+            },
+            {
+                id: 'dia18_saude',
+                type: 'mcq',
+                badge: '🏥 Dia 18 • Saúde & CPF na Nota',
+                title: 'Desconto com Genérico + Nota Fiscal Cidadã',
+                context: 'O tratamento custa R$ 180,00, mas com genérico e CPF na Nota há 35% de desconto. Quanto a família vai pagar?',
+                options: [
+                    { key: 'A', label: 'R$ 63,00' },
+                    { key: 'B', label: 'R$ 145,00' },
+                    { key: 'C', label: 'R$ 117,00' },
+                    { key: 'D', label: 'R$ 125,00' }
+                ],
+                correctKey: 'C',
+                applyToGroup(grp, answer) {
+                    const isCorrect = answer === 'C';
+                    return {
+                        saldo: grp.saldo - 117,
+                        reserva: grp.reserva,
+                        bemEstar: Math.min(100, grp.bemEstar + 5),
+                        cidadania: grp.cidadania + (isCorrect ? 25 : 10),
+                        acertos: grp.acertos + (isCorrect ? 1 : 0)
+                    };
+                }
+            }
+        ];
+
+        // =====================================================================
+        // 3. LÓGICA DO TELÃO (HOST / PROFESSOR)
+        // =====================================================================
+        let hostRoomCode = null;
+        let hostStageIndex = 0;
+        let hostGroupsCache = {};
+
+        function hostCreateRoom() {
+            hostRoomCode = 'TURMA-' + Math.floor(100 + Math.random() * 900);
+            hostStageIndex = 0;
+
+            db.ref(`salas/${hostRoomCode}`).set({
+                criadaEm: Date.now(),
+                stageIndex: 0,
+                status: 'lobby',
+                perguntaAtual: null
+            });
+
+            document.getElementById('host-lobby').classList.add('hidden');
+            document.getElementById('host-stage').classList.remove('hidden');
+            document.getElementById('host-room-pill').textContent = `Sala: ${hostRoomCode}`;
+            document.getElementById('host-room-pill').classList.remove('hidden');
+            document.getElementById('btn-show-qr').classList.remove('hidden');
+            document.getElementById('btn-show-rank').classList.remove('hidden');
+            document.getElementById('btn-export-csv').classList.remove('hidden');
+
+            db.ref(`salas/${hostRoomCode}/grupos`).on('value', (snap) => {
+                hostGroupsCache = snap.val() || {};
+                renderHostMonitors();
+            });
+
+            openQRModal();
+        }
+
+        function openQRModal() {
+            const baseUrl = window.location.href.split('?')[0];
+            const studentUrl = `${baseUrl}?sala=${hostRoomCode}&modo=aluno`;
+
+            document.getElementById('qr-room-code').textContent = hostRoomCode;
+            document.getElementById('qr-url-text').textContent = studentUrl;
+            const box = document.getElementById('qrcode-box');
+            box.innerHTML = '';
+            new QRCode(box, { text: studentUrl, width: 200, height: 200 });
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function closeQRModalAndStart() {
+            document.getElementById('qr-modal').classList.add('hidden');
+            hostPublishCurrentStage();
+        }
+
+        function hostPublishCurrentStage() {
+            const stage = STAGES[hostStageIndex];
+            if (!stage) return;
+
+            const updates = {};
+            Object.keys(hostGroupsCache).forEach(gid => {
+                updates[`salas/${hostRoomCode}/grupos/${gid}/respostaAtual`] = null;
+            });
+            updates[`salas/${hostRoomCode}/stageIndex`] = hostStageIndex;
+            updates[`salas/${hostRoomCode}/status`] = 'aberta';
+            updates[`salas/${hostRoomCode}/perguntaAtual`] = {
+                id: stage.id,
+                type: stage.type,
+                title: stage.title,
+                options: stage.options,
+                revelada: false
+            };
+            db.ref().update(updates);
+
+            document.getElementById('btn-reveal-answers').classList.remove('hidden');
+            document.getElementById('btn-next-stage').classList.add('hidden');
+            document.getElementById('host-question-card').innerHTML = `
+                <span class="inline-block text-xs font-extrabold uppercase px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 mb-3">${stage.badge}</span>
+                <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900 mb-2">${stage.title}</h2>
+                <p class="text-slate-600 font-semibold text-base mb-5">${stage.context}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    ${stage.options.map(opt => `
+                        <div id="host-opt-${opt.key}" class="p-4 rounded-2xl border-2 border-slate-200 bg-slate-50 font-extrabold text-slate-800 flex items-center justify-between">
+                            <span><strong class="text-indigo-600 mr-2">${opt.key})</strong> ${opt.label}</span>
+                            <span class="opt-count text-xs px-2 py-0.5 rounded-lg bg-white border border-slate-200 hidden">0</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function hostRevealAndGrade() {
+            const stage = STAGES[hostStageIndex];
+            const updates = {};
+            const counts = {};
+            stage.options.forEach(o => counts[o.key] = 0);
+
+            Object.entries(hostGroupsCache).forEach(([gid, grp]) => {
+                const ans = grp.respostaAtual;
+                if (ans && counts[ans] !== undefined) counts[ans]++;
+                const nextStats = stage.applyToGroup(grp, ans);
+                updates[`salas/${hostRoomCode}/grupos/${gid}/saldo`] = Math.round(nextStats.saldo * 100) / 100;
+                updates[`salas/${hostRoomCode}/grupos/${gid}/reserva`] = Math.round(nextStats.reserva * 100) / 100;
+                updates[`salas/${hostRoomCode}/grupos/${gid}/bemEstar`] = nextStats.bemEstar;
+                updates[`salas/${hostRoomCode}/grupos/${gid}/cidadania`] = nextStats.cidadania;
+                updates[`salas/${hostRoomCode}/grupos/${gid}/acertos`] = nextStats.acertos ?? grp.acertos;
+            });
+
+            updates[`salas/${hostRoomCode}/status`] = 'revelada';
+            updates[`salas/${hostRoomCode}/perguntaAtual/revelada`] = true;
+            db.ref().update(updates);
+
+            stage.options.forEach(opt => {
+                const el = document.getElementById(`host-opt-${opt.key}`);
+                if (!el) return;
+                const badge = el.querySelector('.opt-count');
+                badge.textContent = `${counts[opt.key]} grupo(s)`;
+                badge.classList.remove('hidden');
+                if (stage.correctKey === opt.key) {
+                    el.classList.remove('border-slate-200', 'bg-slate-50');
+                    el.classList.add('border-emerald-500', 'bg-emerald-50', 'ring-2', 'ring-emerald-200');
+                }
+            });
+
+            document.getElementById('btn-reveal-answers').classList.add('hidden');
+            if (hostStageIndex < STAGES.length - 1) {
+                document.getElementById('btn-next-stage').classList.remove('hidden');
+            } else {
+                openLeaderboardModal();
+            }
+        }
+
+        function hostNextStage() {
+            hostStageIndex++;
+            hostPublishCurrentStage();
+        }
+
+        function renderHostMonitors() {
+            const list = Object.values(hostGroupsCache);
+            document.getElementById('host-group-count').textContent = list.length;
+
+            const qrList = document.getElementById('qr-connected-list');
+            qrList.innerHTML = list.length
+                ? list.map(g => `<span class="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-extrabold">👥 ${g.nome}</span>`).join('')
+                : '<span class="text-xs text-slate-400 font-semibold">Nenhum grupo conectado ainda...</span>';
+
+            const monitor = document.getElementById('host-live-monitor');
+            monitor.innerHTML = list.length
+                ? list.map(g => {
+                    const answered = Boolean(g.respostaAtual);
+                    return `<span class="px-3 py-1.5 rounded-xl text-xs font-extrabold border ${answered ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-slate-50 border-slate-200 text-slate-500'}">
+                        ${answered ? '✅' : '⏳'} ${g.nome}
+                    </span>`;
+                }).join('')
+                : '<span class="text-xs text-slate-400 font-bold">Aguardando grupos entrarem na sala...</span>';
+        }
+
+        function openLeaderboardModal() {
+            const list = Object.values(hostGroupsCache).sort((a, b) => (b.saldo + b.reserva) - (a.saldo + a.reserva));
+            document.getElementById('leaderboard-tbody').innerHTML = list.map(g => `
+                <tr>
+                    <td class="py-3 px-3 text-slate-900">${g.nome}</td>
+                    <td class="py-3 px-3 text-right tabular-nums ${g.saldo < 0 ? 'text-rose-600' : 'text-indigo-900'}">${formatBRL(g.saldo)}</td>
+                    <td class="py-3 px-3 text-right tabular-nums text-emerald-700">${formatBRL(g.reserva)}</td>
+                    <td class="py-3 px-3 text-center">${g.bemEstar}%</td>
+                    <td class="py-3 px-3 text-center text-amber-700">${g.cidadania} pts</td>
+                    <td class="py-3 px-3 text-center">${g.acertos || 0}</td>
+                </tr>
+            `).join('');
+            document.getElementById('leaderboard-modal').classList.remove('hidden');
+        }
+
+        function exportClassCSV() {
+            const list = Object.values(hostGroupsCache);
+            const rows = [['Grupo', 'Saldo', 'Reserva', 'Bem-Estar (%)', 'Cidadania (pts)', 'Acertos']];
+            list.forEach(g => rows.push([g.nome, g.saldo, g.reserva, g.bemEstar, g.cidadania, g.acertos || 0]));
+            const csv = rows.map(r => r.join(';')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `relatorio_${hostRoomCode}.csv`;
+            link.click();
+        }
+
+        // =====================================================================
+        // 4. LÓGICA DO CONTROLE DO ALUNO (CELULAR)
+        // =====================================================================
+        let studentRoomCode = null;
+        let studentGroupId = null;
+
+        function initStudentMode(roomCode) {
+            studentRoomCode = roomCode;
+            document.getElementById('student-app').classList.remove('hidden');
+            document.getElementById('stu-room-badge').textContent = `Sala: ${roomCode}`;
+
+            const savedId = localStorage.getItem(`stu_gid_${roomCode}`);
+            if (savedId) {
+                studentGroupId = savedId;
+                connectStudentListeners();
+            }
+        }
+
+        function studentJoinRoom() {
+            const name = document.getElementById('stu-name-input').value.trim();
+            if (!name) return alert('Digite o nome do seu grupo!');
+
+            studentGroupId = 'grp_' + Math.random().toString(36).slice(2, 8);
+            localStorage.setItem(`stu_gid_${studentRoomCode}`, studentGroupId);
+
+            db.ref(`salas/${studentRoomCode}/grupos/${studentGroupId}`).set({
+                nome: name,
+                saldo: 200,
+                reserva: 0,
+                bemEstar: 80,
+                cidadania: 0,
+                acertos: 0,
+                respostaAtual: null
+            }).then(() => connectStudentListeners());
+        }
+
+        function connectStudentListeners() {
+            document.getElementById('stu-join-view').classList.add('hidden');
+            document.getElementById('stu-controller-view').classList.remove('hidden');
+
+            db.ref(`salas/${studentRoomCode}/grupos/${studentGroupId}`).on('value', (snap) => {
+                const g = snap.val();
+                if (!g) return;
+                document.getElementById('stu-group-title').textContent = g.nome;
+                document.getElementById('stu-saldo').textContent = formatBRL(g.saldo);
+                document.getElementById('stu-reserva').textContent = formatBRL(g.reserva);
+                document.getElementById('stu-bemestar').textContent = `${g.bemEstar}%`;
+                document.getElementById('stu-cidadania').textContent = `${g.cidadania} pts`;
+            });
+
+            db.ref(`salas/${studentRoomCode}/perguntaAtual`).on('value', (snap) => {
+                const q = snap.val();
+                const area = document.getElementById('stu-action-area');
+
+                if (!q) {
+                    area.innerHTML = `<div class="text-center text-slate-500 font-bold"><span class="text-4xl block mb-2">👀</span>Aguardando o professor iniciar...</div>`;
+                    return;
+                }
+
+                if (q.revelada) {
+                    area.innerHTML = `<div class="text-center text-indigo-700 font-extrabold"><span class="text-4xl block mb-2">📊</span>Resultado revelado no telão! Confira seu saldo acima.</div>`;
+                    return;
+                }
+
+                area.innerHTML = `
+                    <h3 class="font-display font-bold text-lg text-slate-900 mb-3 text-center">${q.title}</h3>
+                    <div class="grid grid-cols-1 gap-2.5">
+                        ${q.options.map(opt => `
+                            <button onclick="studentSubmitAnswer('${opt.key}')"
+                                class="w-full p-4 rounded-2xl bg-indigo-50 hover:bg-indigo-600 hover:text-white border-2 border-indigo-200 font-extrabold text-left text-sm sm:text-base transition active:scale-95">
+                                <span class="mr-2">${opt.key})</span> ${opt.label}
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+            });
+        }
+
+        function studentSubmitAnswer(choiceKey) {
+            db.ref(`salas/${studentRoomCode}/grupos/${studentGroupId}/respostaAtual`).set(choiceKey);
+            document.getElementById('stu-action-area').innerHTML = `
+                <div class="text-center text-emerald-700 font-extrabold py-6">
+                    <span class="text-5xl block mb-2">✅</span>
+                    Opção <strong>${choiceKey}</strong> enviada!<br>
+                    <span class="text-xs text-slate-500 font-semibold">Aguarde o professor encerrar a rodada no telão.</span>
+                </div>
+            `;
+        }
+
+        // =====================================================================
+        // 5. ROTEAMENTO INICIAL (TELÃO vs. CELULAR)
+        // =====================================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const modo = params.get('modo');
+            const sala = params.get('sala');
+
+            if (modo === 'aluno' && sala) {
+                initStudentMode(sala);
+            } else {
+                document.getElementById('host-app').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
